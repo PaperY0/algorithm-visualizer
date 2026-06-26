@@ -264,6 +264,95 @@ body {
     letter-spacing: 1px;
 }
 
+/* ==================== 颜色图例 ==================== */
+.legend {
+    display: flex;
+    justify-content: center;
+    gap: 1.2rem;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #6a7a94;
+}
+.legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.legend-dot.lg-normal {
+    border: 2px solid rgba(100, 160, 255, 0.6);
+    background: rgba(20, 30, 60, 0.7);
+}
+.legend-dot.lg-left {
+    background: linear-gradient(135deg, #a855f7, #c084fc);
+}
+.legend-dot.lg-right {
+    background: linear-gradient(135deg, #06b6d4, #22d3ee);
+}
+.legend-dot.lg-active {
+    background: linear-gradient(135deg, #ff7823, #ff9a44);
+}
+.legend-dot.lg-sorted {
+    background: rgba(30, 180, 80, 0.7);
+    border: 2px solid rgba(60, 220, 100, 0.6);
+}
+.legend-dot.lg-placeholder {
+    border: 2px dashed rgba(100, 160, 255, 0.25);
+    background: rgba(10, 15, 30, 0.3);
+}
+.legend-dot.lg-tmp {
+    background: linear-gradient(135deg, #eab308, #facc15);
+}
+
+/* ==================== 指针标签 ==================== */
+.pointer {
+    position: absolute;
+    top: -28px;
+    transform: translateX(-50%);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    z-index: 200;
+    pointer-events: none;
+    transition: left 0.35s ease-in-out;
+    letter-spacing: 1px;
+}
+.pointer::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+}
+.pointer.ptr-i {
+    background: rgba(168, 85, 247, 0.85);
+    color: #fff;
+}
+.pointer.ptr-i::after { border-top: 5px solid rgba(168, 85, 247, 0.85); }
+
+.pointer.ptr-j {
+    background: rgba(6, 182, 212, 0.85);
+    color: #fff;
+}
+.pointer.ptr-j::after { border-top: 5px solid rgba(6, 182, 212, 0.85); }
+
+.pointer.ptr-k {
+    background: rgba(234, 179, 8, 0.85);
+    color: #1a1a2e;
+}
+.pointer.ptr-k::after { border-top: 5px solid rgba(234, 179, 8, 0.85); }
+
 .comment-box {
     margin-top: 40px;
     padding: 12px 24px;
@@ -479,6 +568,16 @@ body {
             <span class="temp-label">临时数组 tmp[]</span>
         </div>
 
+        <div class="legend">
+            <div class="legend-item"><div class="legend-dot lg-normal"></div>未处理</div>
+            <div class="legend-item"><div class="legend-dot lg-left"></div>左半部分</div>
+            <div class="legend-item"><div class="legend-dot lg-right"></div>右半部分</div>
+            <div class="legend-item"><div class="legend-dot lg-active"></div>正在比较</div>
+            <div class="legend-item"><div class="legend-dot lg-sorted"></div>已排序</div>
+            <div class="legend-item"><div class="legend-dot lg-placeholder"></div>空占位</div>
+            <div class="legend-item"><div class="legend-dot lg-tmp"></div>临时数组</div>
+        </div>
+
         <div class="comment-box" id="commentBox">🎮 点击「开始」按钮启动排序动画</div>
 
         <div class="stats-row">
@@ -621,6 +720,35 @@ function updateDivider(sortedCount) {
     const { cw, gap } = getPos();
     div.style.left = (sortedCount * (cw + gap) - gap / 2) + 'px';
     div.classList.add('show');
+}
+
+// ==================== 指针标签 ====================
+
+function showPointer(name, pos) {
+    removePointer(name);
+    const box = document.getElementById('arrBox');
+    const ptr = document.createElement('div');
+    ptr.className = 'pointer ptr-' + name;
+    ptr.id = 'ptr-' + name;
+    ptr.textContent = name;
+    ptr.style.left = (posLeft(pos) + 45) + 'px';
+    box.appendChild(ptr);
+}
+
+function updatePointer(name, pos) {
+    const ptr = document.getElementById('ptr-' + name);
+    if (ptr) ptr.style.left = (posLeft(pos) + 45) + 'px';
+}
+
+function removePointer(name) {
+    const old = document.getElementById('ptr-' + name);
+    if (old) old.remove();
+}
+
+function removeAllPointers() {
+    removePointer('i');
+    removePointer('j');
+    removePointer('k');
 }
 
 // ==================== 临时数组工具 ====================
@@ -859,9 +987,17 @@ async function* mergeGen(l, m, r) {
     const tmp = [];
     let i = l, j = m + 1, k = 0;
 
+    // 显示指针
+    showPointer('i', i);
+    showPointer('j', j);
+    showPointer('k', k);
+
     // 双指针比较
     while (i <= m && j <= r) {
         comparisons++;
+        updatePointer('i', i);
+        updatePointer('j', j);
+        updatePointer('k', k);
         setCircleState(i, 'active');
         setCircleState(j, 'active');
         renderCode(LINE_COMPARE);
@@ -898,10 +1034,15 @@ async function* mergeGen(l, m, r) {
             j++;
         }
         k++;
+        updatePointer('i', i);
+        updatePointer('j', j);
+        updatePointer('k', k);
     }
 
     // 左半剩余
     while (i <= m) {
+        updatePointer('i', i);
+        updatePointer('k', k);
         const val = arr[i];
         tmp.push(val);
         swaps++;
@@ -915,6 +1056,8 @@ async function* mergeGen(l, m, r) {
 
     // 右半剩余
     while (j <= r) {
+        updatePointer('j', j);
+        updatePointer('k', k);
         const val = arr[j];
         tmp.push(val);
         swaps++;
@@ -941,6 +1084,7 @@ async function* mergeGen(l, m, r) {
         if (isPaused) yield;
     }
 
+    removeAllPointers();
     removeSplitFrame();
     await sleep(getDelay() * 0.3);
 }
@@ -1031,6 +1175,7 @@ function resetAll() {
     document.getElementById('btnPause').textContent = '⏸ 暂停';
     document.getElementById('doneBadge').classList.remove('show');
     document.getElementById('divider').classList.remove('show');
+    removeAllPointers();
     removeSplitFrame();
     setComment('🎮 点击「开始」按钮启动排序动画');
     initRender();
