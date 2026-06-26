@@ -481,29 +481,32 @@ body {
 // ==================== 【必填④】快速排序 Java 代码 ====================
 
 const JAVA_CODE = [
-    'public static void quickSort(int[] a, int lo, int hi) {',   // 1
-    '    if (lo < hi) {',                                         // 2
-    '        int pivot = a[hi];',                                 // 3
-    '        int i = lo;',                                        // 4
-    '        for (int j = lo; j < hi; j++) {',                   // 5
-    '            if (a[j] <= pivot) {',                           // 6
-    '                int temp = a[i]; a[i] = a[j]; a[j] = temp;',// 7
-    '                i++;',                                       // 8
-    '            }',                                              // 9
-    '        }',                                                  // 10
-    '        a[hi] = a[i]; a[i] = pivot;',                       // 11
-    '        quickSort(a, lo, i - 1);',                          // 12
-    '        quickSort(a, i + 1, hi);',                          // 13
-    '    }',                                                      // 14
-    '}',                                                          // 15
+    'public static void quickSort(int[] arr, int low, int high) {',
+    '    if (low < high) {',
+    '        int pivot = arr[high];',
+    '        int pivotIndex = low;',
+    '        for (int j = low; j < high; j++) {',
+    '            if (arr[j] <= pivot) {',
+    '                int temp = arr[pivotIndex];',
+    '                arr[pivotIndex] = arr[j];',
+    '                arr[j] = temp;',
+    '                pivotIndex++;',
+    '            }',
+    '        }',
+    '        arr[high] = arr[pivotIndex];',
+    '        arr[pivotIndex] = pivot;',
+    '        quickSort(arr, low, pivotIndex - 1);',
+    '        quickSort(arr, pivotIndex + 1, high);',
+    '    }',
+    '}',
 ];
 
-const LINE_PIVOT    = 3;
-const LINE_COMPARE  = 6;
-const LINE_SWAP     = 7;
-const LINE_PLACE    = 11;
-const LINE_RECURSE_L = 12;
-const LINE_RECURSE_R = 13;
+const LINE_PIVOT     = 3;
+const LINE_COMPARE   = 6;
+const LINE_SWAP      = 7;
+const LINE_PLACE     = 13;
+const LINE_RECURSE_L = 15;
+const LINE_RECURSE_R = 16;
 const INIT_ARR = [5, 3, 8, 4, 2];
 
 // ==================== 状态变量 【不要修改】 ====================
