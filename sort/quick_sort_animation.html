@@ -188,6 +188,36 @@ body {
     letter-spacing: 1px;
 }
 
+/* ==================== 基准值标签 ==================== */
+.pivot-label {
+    position: absolute;
+    top: -30px;
+    transform: translateX(-50%);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: rgba(168, 85, 247, 0.85);
+    color: #fff;
+    z-index: 200;
+    pointer-events: none;
+    transition: left 0.4s ease-in-out;
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+.pivot-label::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid rgba(168, 85, 247, 0.85);
+}
+
 .comment-box {
     margin-top: 40px;
     padding: 12px 24px;
@@ -538,6 +568,29 @@ function updateDivider(sortedCount) {
     div.classList.add('show');
 }
 
+// ==================== 基准值标签 ====================
+
+function showPivotLabel(pos, value) {
+    removePivotLabel();
+    const box = document.getElementById('numBox');
+    const label = document.createElement('div');
+    label.className = 'pivot-label';
+    label.id = 'pivotLabel';
+    label.textContent = 'pivot=' + value;
+    label.style.left = (posLeft(pos) + 45) + 'px';
+    box.appendChild(label);
+}
+
+function updatePivotLabel(pos) {
+    const label = document.getElementById('pivotLabel');
+    if (label) label.style.left = (posLeft(pos) + 45) + 'px';
+}
+
+function removePivotLabel() {
+    const old = document.getElementById('pivotLabel');
+    if (old) old.remove();
+}
+
 // ==================== 交换动画 【不要修改】 ====================
 
 function animSwap(aId, bId, aPos, bPos) {
@@ -627,6 +680,7 @@ async function* partition(lo, hi) {
 
     // 标记 pivot（紫色）
     setCircleState(hi, 'pivot');
+    showPivotLabel(hi, pivotVal);
     renderCode(LINE_PIVOT);
     setComment(`选择基准值 a[${hi}]=${pivotVal}`);
     await sleep(getDelay());
@@ -674,11 +728,13 @@ async function* partition(lo, hi) {
         setCircleState(hi, 'normal');
         await animSwap(circleOrder[i], circleOrder[hi], i, hi);
         [arr[i], arr[hi]] = [arr[hi], arr[i]];
+        updatePivotLabel(i);
     } else {
         setCircleState(hi, 'normal');
     }
 
-    // 标记 pivot 已就位（绿色）
+    // 移除 pivot 标签，标记已就位
+    removePivotLabel();
     setCircleState(i, 'sorted');
     updateDivider(i + 1);
     renderCode(LINE_PLACE);
@@ -811,6 +867,7 @@ function resetAll() {
     document.getElementById('btnPause').textContent = '⏸ 暂停';
     document.getElementById('doneBadge').classList.remove('show');
     document.getElementById('divider').classList.remove('show');
+    removePivotLabel();
     setComment('🎮 点击「开始」按钮启动排序动画');
     initRender();
 }
