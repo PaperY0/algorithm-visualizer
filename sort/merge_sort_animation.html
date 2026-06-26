@@ -71,25 +71,23 @@ body {
     height: 130px;
 }
 
-/* 临时数组容器（合并时出现） */
+/* 临时数组容器 */
 .temp-container {
     position: relative;
     width: 80%;
     height: 110px;
-    margin-top: 20px;
-    display: none;
+    margin-top: 24px;
 }
-.temp-container.show { display: block; }
 .temp-label {
     position: absolute;
     top: -18px;
     left: 0;
     font-size: 11px;
-    color: rgba(255, 200, 50, 0.6);
+    color: rgba(255, 200, 50, 0.5);
     letter-spacing: 1px;
 }
 
-/* ==================== 数字圆圈核心样式 【不要修改】 ==================== */
+/* ==================== 主数组小球 ==================== */
 .circle {
     width: 90px;
     height: 90px;
@@ -117,7 +115,6 @@ body {
     z-index: 1;
 }
 
-/* 左半部分 - 紫色 */
 .circle.left-part {
     background: linear-gradient(135deg, #a855f7, #c084fc);
     color: #fff;
@@ -128,7 +125,6 @@ body {
     filter: brightness(1.15);
 }
 
-/* 右半部分 - 青色 */
 .circle.right-part {
     background: linear-gradient(135deg, #06b6d4, #22d3ee);
     color: #fff;
@@ -139,7 +135,6 @@ body {
     filter: brightness(1.15);
 }
 
-/* 正在比较/选取 - 橙色 */
 .circle.active {
     background: linear-gradient(135deg, #ff7823, #ff9a44);
     color: #fff;
@@ -150,7 +145,6 @@ body {
     filter: brightness(1.15);
 }
 
-/* 已排序 - 绿色 */
 .circle.sorted {
     background: rgba(30, 180, 80, 0.7);
     border: 2px solid rgba(60, 220, 100, 0.6);
@@ -159,7 +153,7 @@ body {
     z-index: 2;
 }
 
-/* 空占位（元素移走后） */
+/* 空占位（主数组中元素移走后） */
 .circle.placeholder {
     border: 2px dashed rgba(100, 160, 255, 0.2);
     background: rgba(10, 15, 30, 0.3);
@@ -168,40 +162,71 @@ body {
     z-index: 0;
 }
 
-/* 临时数组元素 - 黄色 */
-.circle.temp-el {
+/* ==================== 临时数组框 ==================== */
+.tmp-box {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    font-weight: bold;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: background 0.3s ease, box-shadow 0.3s ease, border 0.3s ease, color 0.3s ease;
+    cursor: default;
+    user-select: none;
+}
+
+/* 空框 */
+.tmp-box.empty {
+    border: 2px dashed rgba(234, 179, 8, 0.25);
+    background: rgba(30, 25, 10, 0.3);
+    color: transparent;
+    box-shadow: none;
+}
+
+/* 已填充 */
+.tmp-box.filled {
     background: linear-gradient(135deg, #eab308, #facc15);
     color: #1a1a2e;
     box-shadow: 0 0 20px rgba(234, 179, 8, 0.5),
                 0 0 40px rgba(234, 179, 8, 0.15);
     border: none;
-    z-index: 20;
     font-weight: 800;
 }
 
-/* ==================== 下移/上移动画 ==================== */
-@keyframes moveDown {
-    0%   { transform: translateY(-50%) scale(1); opacity: 1; }
-    50%  { transform: translateY(-50%) scale(1.12); opacity: 0.85; }
-    100% { transform: translateY(-50%) scale(1); opacity: 1; }
+/* ==================== 移动中的小球（脱离定位，用 fixed/absolute 动画） ==================== */
+.move-ball {
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    font-weight: 800;
+    z-index: 300;
+    pointer-events: none;
+    transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.5s ease-in-out;
 }
 
-@keyframes moveUp {
-    0%   { transform: translateY(-50%) scale(1); opacity: 1; }
-    50%  { transform: translateY(-50%) scale(1.12); opacity: 0.85; }
-    100% { transform: translateY(-50%) scale(1); opacity: 1; }
+.move-ball.to-tmp {
+    background: linear-gradient(135deg, #eab308, #facc15);
+    color: #1a1a2e;
+    box-shadow: 0 0 28px rgba(234, 179, 8, 0.7),
+                0 0 56px rgba(234, 179, 8, 0.25);
 }
 
-.circle.moving-down {
-    animation: moveDown 0.45s ease-in-out forwards;
-    z-index: 200;
-    filter: brightness(1.3);
-}
-
-.circle.moving-up {
-    animation: moveUp 0.45s ease-in-out forwards;
-    z-index: 200;
-    filter: brightness(1.3);
+.move-ball.to-main {
+    background: rgba(30, 180, 80, 0.7);
+    border: 2px solid rgba(60, 220, 100, 0.6);
+    color: #fff;
+    box-shadow: 0 0 28px rgba(60, 220, 100, 0.6),
+                0 0 56px rgba(60, 220, 100, 0.2);
 }
 
 /* ==================== 拆分外框 ==================== */
@@ -216,7 +241,7 @@ body {
     transition: left 0.4s ease-in-out, width 0.4s ease-in-out, opacity 0.3s ease;
 }
 
-/* ==================== 分隔线 【不要修改】 ==================== */
+/* ==================== 分隔线 ==================== */
 .divider {
     position: absolute;
     top: 0;
@@ -598,6 +623,48 @@ function updateDivider(sortedCount) {
     div.classList.add('show');
 }
 
+// ==================== 临时数组工具 ====================
+
+// 初始化 5 个空框
+function renderTempBoxes() {
+    const box = document.getElementById('tempBox');
+    // 保留 label
+    const label = box.querySelector('.temp-label');
+    box.innerHTML = '';
+    if (label) box.appendChild(label);
+
+    const { cw, gap } = getPos();
+    for (let i = 0; i < arr.length; i++) {
+        const div = document.createElement('div');
+        div.className = 'tmp-box empty';
+        div.id = 'tmp-' + i;
+        div.style.left = (i * (cw + gap)) + 'px';
+        box.appendChild(div);
+    }
+}
+
+function getTmpBox(idx) {
+    return document.getElementById('tmp-' + idx);
+}
+
+function fillTmpBox(idx, value) {
+    const box = getTmpBox(idx);
+    if (!box) return;
+    box.className = 'tmp-box filled';
+    box.textContent = value;
+}
+
+function emptyTmpBox(idx) {
+    const box = getTmpBox(idx);
+    if (!box) return;
+    box.className = 'tmp-box empty';
+    box.textContent = '';
+}
+
+function resetAllTmpBoxes() {
+    for (let i = 0; i < arr.length; i++) emptyTmpBox(i);
+}
+
 // ==================== 拆分外框 ====================
 
 function showSplitFrame(l, r) {
@@ -618,46 +685,98 @@ function removeSplitFrame() {
     if (old) old.remove();
 }
 
-// ==================== 临时数组工具 ====================
+// ==================== 移动小球动画 ====================
 
-function showTemp() {
-    document.getElementById('tempBox').classList.add('show');
-}
-function hideTemp() {
-    const box = document.getElementById('tempBox');
-    box.classList.remove('show');
-    // 移除临时元素
-    box.querySelectorAll('.circle').forEach(el => el.remove());
-}
-
-function posLeftTemp(idx) {
-    const box = document.getElementById('tempBox');
-    const w = box.clientWidth, cw = 70, n = arr.length;
-    const gap = n > 1 ? (w - cw * n) / (n - 1) : 0;
-    return idx * (cw + gap);
+function getMainElCenter(pos) {
+    const box = document.getElementById('arrBox');
+    const rect = box.getBoundingClientRect();
+    const panelRect = box.closest('.left-panel').getBoundingClientRect();
+    const left = posLeft(pos);
+    return {
+        x: rect.left - panelRect.left + left + 45,
+        y: rect.top - panelRect.top + 65
+    };
 }
 
-function createTempEl(idx, value) {
-    const box = document.getElementById('tempBox');
-    const div = document.createElement('div');
-    div.className = 'circle temp-el';
-    div.id = 'temp-' + idx;
-    div.textContent = value;
-    div.style.left = posLeftTemp(idx) + 'px';
-    div.style.width = '70px';
-    div.style.height = '70px';
-    div.style.fontSize = '26px';
-    box.appendChild(div);
-    return div;
+function getTmpBoxCenter(idx) {
+    const tmpBox = getTmpBox(idx);
+    if (!tmpBox) return { x: 0, y: 0 };
+    const rect = tmpBox.getBoundingClientRect();
+    const panelRect = tmpBox.closest('.left-panel').getBoundingClientRect();
+    return {
+        x: rect.left - panelRect.left + 45,
+        y: rect.top - panelRect.top + 45
+    };
 }
 
-function getTempEl(idx) {
-    return document.getElementById('temp-' + idx);
+// 主数组 → 临时数组
+function animToTmp(fromPos, tmpIdx, value) {
+    return new Promise(resolve => {
+        const panel = document.querySelector('.left-panel');
+        const from = getMainElCenter(fromPos);
+        const to = getTmpBoxCenter(tmpIdx);
+
+        const ball = document.createElement('div');
+        ball.className = 'move-ball to-tmp';
+        ball.textContent = value;
+        ball.style.left = (from.x - 45) + 'px';
+        ball.style.top = (from.y - 45) + 'px';
+        panel.appendChild(ball);
+
+        // 原位变空占位
+        const mainEl = getCircleAt(fromPos);
+        if (mainEl) {
+            mainEl.className = 'circle placeholder';
+            mainEl.textContent = '';
+        }
+
+        requestAnimationFrame(() => {
+            ball.style.left = (to.x - 45) + 'px';
+            ball.style.top = (to.y - 45) + 'px';
+            ball.style.transform = 'scale(1.12)';
+        });
+
+        setTimeout(() => {
+            ball.remove();
+            fillTmpBox(tmpIdx, value);
+            resolve();
+        }, 520);
+    });
 }
 
-function clearTemp() {
-    const box = document.getElementById('tempBox');
-    box.querySelectorAll('.circle').forEach(el => el.remove());
+// 临时数组 → 主数组
+function animToMain(tmpIdx, toPos, value) {
+    return new Promise(resolve => {
+        const panel = document.querySelector('.left-panel');
+        const from = getTmpBoxCenter(tmpIdx);
+        const to = getMainElCenter(toPos);
+
+        const ball = document.createElement('div');
+        ball.className = 'move-ball to-main';
+        ball.textContent = value;
+        ball.style.left = (from.x - 45) + 'px';
+        ball.style.top = (from.y - 45) + 'px';
+        panel.appendChild(ball);
+
+        emptyTmpBox(tmpIdx);
+
+        requestAnimationFrame(() => {
+            ball.style.left = (to.x - 45) + 'px';
+            ball.style.top = (to.y - 45) + 'px';
+            ball.style.transform = 'scale(1.12)';
+        });
+
+        setTimeout(() => {
+            ball.remove();
+            const mainEl = getCircleAt(toPos);
+            if (mainEl) {
+                mainEl.textContent = value;
+                mainEl.className = 'circle sorted';
+            }
+            circleOrder[toPos] = toPos;
+            resolve();
+        }, 520);
+    });
 }
 
 // ==================== 渲染函数 ====================
@@ -665,6 +784,7 @@ function clearTemp() {
 function initRender() {
     arr = [...INIT_ARR];
     renderCircles();
+    renderTempBoxes();
     renderCode(0);
     updateStats();
 }
@@ -731,18 +851,15 @@ async function* mergeGen(l, m, r) {
     await sleep(getDelay());
     if (isPaused) yield;
 
-    // 创建临时数组
-    showTemp();
-    clearTemp();
     renderCode(LINE_TMP);
-    setComment(`创建 tmp[${r - l + 1}]`);
+    setComment(`使用 tmp[] 临时数组`);
     await sleep(getDelay() * 0.5);
     if (isPaused) yield;
 
     const tmp = [];
     let i = l, j = m + 1, k = 0;
 
-    // 双指针比较，元素下移到临时数组
+    // 双指针比较
     while (i <= m && j <= r) {
         comparisons++;
         setCircleState(i, 'active');
@@ -754,45 +871,27 @@ async function* mergeGen(l, m, r) {
         if (isPaused) yield;
 
         if (arr[i] <= arr[j]) {
-            // 左边更小，下移到 tmp
             const chosenPos = i;
-            const el = getCircleAt(chosenPos);
-            if (el) {
-                el.className = 'circle moving-down';
-                await sleep(450);
-                el.className = 'circle placeholder';
-                el.textContent = '';
-            }
-
-            tmp.push(arr[chosenPos]);
-            createTempEl(k, arr[chosenPos]);
+            const val = arr[chosenPos];
+            tmp.push(val);
             swaps++;
             updateStats();
 
-            setComment(`a[${chosenPos}]=${arr[chosenPos]} 移入 tmp[${k}]`);
-            await sleep(getDelay() * 0.3);
+            setComment(`${val} 较小 → tmp[${k}]`);
+            await animToTmp(chosenPos, k, val);
             if (isPaused) yield;
 
             setCircleState(chosenPos, 'left-part');
             i++;
         } else {
-            // 右边更小，下移到 tmp
             const chosenPos = j;
-            const el = getCircleAt(chosenPos);
-            if (el) {
-                el.className = 'circle moving-down';
-                await sleep(450);
-                el.className = 'circle placeholder';
-                el.textContent = '';
-            }
-
-            tmp.push(arr[chosenPos]);
-            createTempEl(k, arr[chosenPos]);
+            const val = arr[chosenPos];
+            tmp.push(val);
             swaps++;
             updateStats();
 
-            setComment(`a[${chosenPos}]=${arr[chosenPos]} 移入 tmp[${k}]`);
-            await sleep(getDelay() * 0.3);
+            setComment(`${val} 较小 → tmp[${k}]`);
+            await animToTmp(chosenPos, k, val);
             if (isPaused) yield;
 
             setCircleState(chosenPos, 'right-part');
@@ -801,47 +900,33 @@ async function* mergeGen(l, m, r) {
         k++;
     }
 
-    // 左半部分剩余
+    // 左半剩余
     while (i <= m) {
-        const el = getCircleAt(i);
-        if (el) {
-            el.className = 'circle moving-down';
-            await sleep(450);
-            el.className = 'circle placeholder';
-            el.textContent = '';
-        }
-        tmp.push(arr[i]);
-        createTempEl(k, arr[i]);
+        const val = arr[i];
+        tmp.push(val);
         swaps++;
         updateStats();
-        setComment(`剩余 a[${i}]=${arr[i]} 移入 tmp[${k}]`);
-        await sleep(getDelay() * 0.3);
+        setComment(`剩余 ${val} → tmp[${k}]`);
+        await animToTmp(i, k, val);
         if (isPaused) yield;
         setCircleState(i, 'left-part');
         i++; k++;
     }
 
-    // 右半部分剩余
+    // 右半剩余
     while (j <= r) {
-        const el = getCircleAt(j);
-        if (el) {
-            el.className = 'circle moving-down';
-            await sleep(450);
-            el.className = 'circle placeholder';
-            el.textContent = '';
-        }
-        tmp.push(arr[j]);
-        createTempEl(k, arr[j]);
+        const val = arr[j];
+        tmp.push(val);
         swaps++;
         updateStats();
-        setComment(`剩余 a[${j}]=${arr[j]} 移入 tmp[${k}]`);
-        await sleep(getDelay() * 0.3);
+        setComment(`剩余 ${val} → tmp[${k}]`);
+        await animToTmp(j, k, val);
         if (isPaused) yield;
         setCircleState(j, 'right-part');
         j++; k++;
     }
 
-    // 回填阶段：tmp → 原数组，绿色
+    // 回填：tmp → 原数组
     renderCode(LINE_COPYBACK);
     setComment(`回填 tmp[] → a[${l}..${r}]`);
     await sleep(getDelay() * 0.5);
@@ -851,31 +936,12 @@ async function* mergeGen(l, m, r) {
         const targetPos = l + t;
         arr[targetPos] = tmp[t];
 
-        // 临时元素上移回原数组
-        const tempEl = getTempEl(t);
-        if (tempEl) {
-            tempEl.className = 'circle moving-up';
-            await sleep(450);
-            tempEl.remove();
-        }
-
-        // 更新原数组元素
-        const mainEl = getCircleAt(targetPos);
-        if (mainEl) {
-            mainEl.textContent = tmp[t];
-            mainEl.className = 'circle sorted';
-        }
-        circleOrder[targetPos] = targetPos;
-
         setComment(`a[${targetPos}] = ${tmp[t]}`);
-        await sleep(getDelay() * 0.3);
+        await animToMain(t, targetPos, tmp[t]);
         if (isPaused) yield;
     }
 
-    // 清理
-    hideTemp();
     removeSplitFrame();
-
     await sleep(getDelay() * 0.3);
 }
 
@@ -883,31 +949,26 @@ async function* mergeSortRecursive(l, r) {
     if (l < r) {
         const m = Math.floor((l + r) / 2);
 
-        // 拆分阶段：显示外框收窄
         showSplitFrame(l, r);
         renderCode(LINE_SPLIT);
         setComment(`拆分 [${l}..${r}] → [${l}..${m}] + [${m+1}..${r}]`);
         await sleep(getDelay() * 0.6);
         if (isPaused) yield;
 
-        // 递归左半部分
         renderCode(LINE_RECURSE_L);
         setComment(`递归左半 [${l}..${m}]`);
         await sleep(getDelay() * 0.3);
         if (isPaused) yield;
         yield* mergeSortRecursive(l, m);
 
-        // 递归右半部分
         renderCode(LINE_RECURSE_R);
         setComment(`递归右半 [${m+1}..${r}]`);
         await sleep(getDelay() * 0.3);
         if (isPaused) yield;
         yield* mergeSortRecursive(m + 1, r);
 
-        // 归并
         yield* mergeGen(l, m, r);
     } else {
-        // 单个元素
         setCircleState(l, 'sorted');
         await sleep(getDelay() * 0.15);
     }
@@ -940,6 +1001,7 @@ async function startSort() {
     swaps = 0;
     loops = 0;
     renderCircles();
+    renderTempBoxes();
     await sleep(50);
 
     generatorRef = sortGenerator();
@@ -969,7 +1031,6 @@ function resetAll() {
     document.getElementById('btnPause').textContent = '⏸ 暂停';
     document.getElementById('doneBadge').classList.remove('show');
     document.getElementById('divider').classList.remove('show');
-    hideTemp();
     removeSplitFrame();
     setComment('🎮 点击「开始」按钮启动排序动画');
     initRender();
