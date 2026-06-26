@@ -710,7 +710,8 @@ async function* partition(lo, hi) {
                 swaps++;
                 updateStats();
 
-                await animSwap(circleOrder[i], circleOrder[j], i, j);
+                // animSwap 参数：球A→位置j，球B→位置i（目标位置交叉）
+                await animSwap(circleOrder[i], circleOrder[j], j, i);
                 [arr[i], arr[j]] = [arr[j], arr[i]];
             } else {
                 setCircleState(j, 'normal');
@@ -728,18 +729,18 @@ async function* partition(lo, hi) {
         swaps++;
         updateStats();
 
-        setCircleState(hi, 'normal');
-        await animSwap(circleOrder[i], circleOrder[hi], i, hi);
+        // 保持 pivot 紫色参与交换
+        // animSwap 参数：球A→位置hi，球B→位置i（目标位置交叉）
+        await animSwap(circleOrder[i], circleOrder[hi], hi, i);
         [arr[i], arr[hi]] = [arr[hi], arr[i]];
         updatePivotLabel(i);
-    } else {
-        setCircleState(hi, 'normal');
     }
 
-    // 移除 pivot 标签，标记已就位
+    // pivot 恢复紫色 → 短暂停留 → 变绿色已排序
+    setCircleState(i, 'pivot');
+    await sleep(getDelay() * 0.3);
     removePivotLabel();
     setCircleState(i, 'sorted');
-    updateDivider(i + 1);
     renderCode(LINE_PLACE);
     setComment(`pivot=${pivotVal} 已就位于 a[${i}]`);
     await sleep(getDelay() * 0.5);
@@ -788,7 +789,6 @@ async function* quickSortRecursive(lo, hi) {
     } else if (lo === hi) {
         // 单个元素，直接标记已排序
         setCircleState(lo, 'sorted');
-        updateDivider(lo + 1);
         await sleep(getDelay() * 0.2);
     }
 }
@@ -797,7 +797,6 @@ async function* sortGenerator() {
     comparisons = 0;
     swaps = 0;
     loops = 0;
-    updateDivider(0);
 
     const gen = quickSortRecursive(0, arr.length - 1);
     let result = await gen.next();
@@ -806,7 +805,6 @@ async function* sortGenerator() {
         result = await gen.next();
     }
 
-    updateDivider(arr.length);
     await sleep(300);
 }
 
