@@ -468,25 +468,24 @@ body {
 
 // Java 代码（右侧展示用）—— 替换成你的算法代码
 const JAVA_CODE = [
-    'public static void bubbleSort(int[] a) {',
-    '    int n = a.length;',
+    'public static void bubbleSort(int[] arr) {',
+    '    int n = arr.length;',
     '    for (int i = 0; i < n - 1; i++) {',
     '        for (int j = 0; j < n - i - 1; j++) {',
-    '            if (a[j] > a[j + 1]) {',
-    '                int temp = a[j];',
-    '                a[j] = a[j + 1];',
-    '                a[j + 1] = temp;',
+    '            if (arr[j] > arr[j + 1]) {',
+    '                int temp = arr[j];',
+    '                arr[j] = arr[j + 1];',
+    '                arr[j + 1] = temp;',
     '            }',
     '        }',
     '    }',
     '}',
 ];
 
-// 行号常量（对应 JAVA_CODE 的行号，从1开始）
-const LINE_COMPARE   = 5;   // if (a[j] > a[j + 1])
-const LINE_SWAP_TEMP = 6;   // int temp = a[j];
-const LINE_SWAP_A    = 7;   // a[j] = a[j + 1];
-const LINE_SWAP_B    = 8;   // a[j + 1] = temp;
+const LINE_COMPARE   = 5;
+const LINE_SWAP_TEMP = 6;
+const LINE_SWAP_A    = 7;
+const LINE_SWAP_B    = 8;
 
 // 初始数组
 const INIT_ARR = [5, 3, 8, 4, 2];

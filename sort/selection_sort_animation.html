@@ -462,18 +462,18 @@ body {
 // ==================== 【必填④】算法数据和 Java 代码 ====================
 
 const JAVA_CODE = [
-    'public static void selectionSort(int[] a) {',
-    '    int n = a.length;',
+    'public static void selectionSort(int[] arr) {',
+    '    int n = arr.length;',
     '    for (int i = 0; i < n - 1; i++) {',
-    '        int minIdx = i;',
+    '        int minIndex = i;',
     '        for (int j = i + 1; j < n; j++) {',
-    '            if (a[j] < a[minIdx]) {',
-    '                minIdx = j;',
+    '            if (arr[j] < arr[minIndex]) {',
+    '                minIndex = j;',
     '            }',
     '        }',
-    '        int temp = a[i];',
-    '        a[i] = a[minIdx];',
-    '        a[minIdx] = temp;',
+    '        int temp = arr[i];',
+    '        arr[i] = arr[minIndex];',
+    '        arr[minIndex] = temp;',
     '    }',
     '}',
 ];
