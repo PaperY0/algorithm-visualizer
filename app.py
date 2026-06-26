@@ -1,9 +1,34 @@
 import streamlit as st
 import time
+import random
+
 from algorithms.bubble_sort import bubble_sort, BUBBLE_SORT_INFO
+from algorithms.selection_sort import selection_sort, SELECTION_SORT_INFO
+from algorithms.insertion_sort import insertion_sort, INSERTION_SORT_INFO
+from algorithms.shell_sort import shell_sort, SHELL_SORT_INFO
+from algorithms.merge_sort import merge_sort, MERGE_SORT_INFO
+from algorithms.quick_sort import quick_sort, QUICK_SORT_INFO
+from algorithms.heap_sort import heap_sort, HEAP_SORT_INFO
+from algorithms.counting_sort import counting_sort, COUNTING_SORT_INFO
+from algorithms.bucket_sort import bucket_sort, BUCKET_SORT_INFO
+from algorithms.radix_sort import radix_sort, RADIX_SORT_INFO
 from algorithms.base import Step
 from visualizer.renderer import render_array
 from visualizer.code_highlight import render_code
+
+# 算法映射
+ALGORITHMS = {
+    "冒泡排序": (bubble_sort, BUBBLE_SORT_INFO, "java_code/bubble_sort.java"),
+    "选择排序": (selection_sort, SELECTION_SORT_INFO, "java_code/selection_sort.java"),
+    "插入排序": (insertion_sort, INSERTION_SORT_INFO, "java_code/insertion_sort.java"),
+    "希尔排序": (shell_sort, SHELL_SORT_INFO, "java_code/shell_sort.java"),
+    "归并排序": (merge_sort, MERGE_SORT_INFO, "java_code/merge_sort.java"),
+    "快速排序": (quick_sort, QUICK_SORT_INFO, "java_code/quick_sort.java"),
+    "堆排序": (heap_sort, HEAP_SORT_INFO, "java_code/heap_sort.java"),
+    "计数排序": (counting_sort, COUNTING_SORT_INFO, "java_code/counting_sort.java"),
+    "桶排序": (bucket_sort, BUCKET_SORT_INFO, "java_code/bucket_sort.java"),
+    "基数排序": (radix_sort, RADIX_SORT_INFO, "java_code/radix_sort.java"),
+}
 
 # 页面配置
 st.set_page_config(
@@ -23,6 +48,8 @@ if 'is_playing' not in st.session_state:
     st.session_state.is_playing = False
 if 'speed' not in st.session_state:
     st.session_state.speed = 0.5
+if 'input_array' not in st.session_state:
+    st.session_state.input_array = [5, 3, 8, 1, 9, 2, 7, 4]
 
 # 侧边栏：数据输入
 with st.sidebar:
@@ -33,21 +60,27 @@ with st.sidebar:
     if data_option == "随机生成":
         array_size = st.slider("数组大小", 5, 20, 8)
         if st.button("生成随机数组"):
-            import random
             st.session_state.input_array = random.sample(
                 range(1, array_size * 2), array_size
             )
     else:
-        input_str = st.text_input("输入数字（逗号分隔）", "5,3,8,1,9,2,7,4")
-        st.session_state.input_array = [
-            int(x.strip()) for x in input_str.split(',')
-        ]
+        input_str = st.text_input(
+            "输入数字（逗号分隔）",
+            ",".join(map(str, st.session_state.input_array))
+        )
+        try:
+            st.session_state.input_array = [
+                int(x.strip()) for x in input_str.split(',')
+            ]
+        except ValueError:
+            pass
 
     st.divider()
 
-    # 算法选择（目前只有冒泡排序）
+    # 算法选择
     st.header("算法选择")
-    algorithm = st.selectbox("选择排序算法", ["冒泡排序"])
+    algorithm = st.selectbox("选择排序算法", list(ALGORITHMS.keys()))
+    sort_func, sort_info, code_path = ALGORITHMS[algorithm]
 
     st.divider()
 
@@ -63,16 +96,24 @@ col_viz, col_code = st.columns([1, 1])
 with col_viz:
     st.subheader("可视化")
 
+    # 颜色图例
+    st.markdown("""
+    **颜色说明：**
+    - 🔵 蓝色：未处理
+    - 🔴 红色：正在比较
+    - 🟡 黄色：正在交换
+    - 🟢 绿色：已排序
+    """)
+
     # 控制按钮
     btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
 
     with btn_col1:
         if st.button("▶ 开始", use_container_width=True):
-            if 'input_array' in st.session_state:
-                st.session_state.generator = bubble_sort(
-                    st.session_state.input_array
-                )
-                st.session_state.is_playing = True
+            st.session_state.generator = sort_func(
+                st.session_state.input_array
+            )
+            st.session_state.is_playing = True
 
     with btn_col2:
         if st.button("⏸ 暂停", use_container_width=True):
@@ -81,10 +122,9 @@ with col_viz:
     with btn_col3:
         if st.button("⏭ 单步", use_container_width=True):
             if st.session_state.generator is None:
-                if 'input_array' in st.session_state:
-                    st.session_state.generator = bubble_sort(
-                        st.session_state.input_array
-                    )
+                st.session_state.generator = sort_func(
+                    st.session_state.input_array
+                )
             if st.session_state.generator:
                 try:
                     st.session_state.current_step = next(
@@ -114,12 +154,12 @@ with col_code:
     st.subheader("Java 代码")
 
     # 复杂度信息
-    info = BUBBLE_SORT_INFO
     st.markdown(f"""
-    **{info.name}**
-    - 时间复杂度: `{info.time_complexity}`
-    - 空间复杂度: `{info.space_complexity}`
-    - 稳定性: {'✅ 稳定' if info.stable else '❌ 不稳定'}
+    **{sort_info.name}**
+    - 时间复杂度: `{sort_info.time_complexity}`
+    - 空间复杂度: `{sort_info.space_complexity}`
+    - 稳定性: {'✅ 稳定' if sort_info.stable else '❌ 不稳定'}
+    - {sort_info.description}
     """)
 
     # 代码显示
@@ -127,7 +167,7 @@ with col_code:
     if st.session_state.current_step:
         highlight_line = st.session_state.current_step.highlight_line
 
-    code_html = render_code('java_code/bubble_sort.java', highlight_line)
+    code_html = render_code(code_path, highlight_line)
     st.markdown(code_html, unsafe_allow_html=True)
 
 # 底部：统计信息
