@@ -64,12 +64,32 @@ body {
     letter-spacing: 1px;
 }
 
-.num-wrapper {
+/* ==================== 数组容器 ==================== */
+.arr-container {
     position: relative;
     width: 80%;
     height: 130px;
 }
 
+/* 临时数组容器（合并时出现） */
+.temp-container {
+    position: relative;
+    width: 80%;
+    height: 110px;
+    margin-top: 20px;
+    display: none;
+}
+.temp-container.show { display: block; }
+.temp-label {
+    position: absolute;
+    top: -18px;
+    left: 0;
+    font-size: 11px;
+    color: rgba(255, 200, 50, 0.6);
+    letter-spacing: 1px;
+}
+
+/* ==================== 数字圆圈核心样式 【不要修改】 ==================== */
 .circle {
     width: 90px;
     height: 90px;
@@ -137,6 +157,63 @@ body {
     color: #fff;
     box-shadow: 0 0 12px rgba(60, 220, 100, 0.2);
     z-index: 2;
+}
+
+/* 空占位（元素移走后） */
+.circle.placeholder {
+    border: 2px dashed rgba(100, 160, 255, 0.2);
+    background: rgba(10, 15, 30, 0.3);
+    color: transparent;
+    box-shadow: none;
+    z-index: 0;
+}
+
+/* 临时数组元素 - 黄色 */
+.circle.temp-el {
+    background: linear-gradient(135deg, #eab308, #facc15);
+    color: #1a1a2e;
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.5),
+                0 0 40px rgba(234, 179, 8, 0.15);
+    border: none;
+    z-index: 20;
+    font-weight: 800;
+}
+
+/* ==================== 下移/上移动画 ==================== */
+@keyframes moveDown {
+    0%   { transform: translateY(-50%) scale(1); opacity: 1; }
+    50%  { transform: translateY(-50%) scale(1.12); opacity: 0.85; }
+    100% { transform: translateY(-50%) scale(1); opacity: 1; }
+}
+
+@keyframes moveUp {
+    0%   { transform: translateY(-50%) scale(1); opacity: 1; }
+    50%  { transform: translateY(-50%) scale(1.12); opacity: 0.85; }
+    100% { transform: translateY(-50%) scale(1); opacity: 1; }
+}
+
+.circle.moving-down {
+    animation: moveDown 0.45s ease-in-out forwards;
+    z-index: 200;
+    filter: brightness(1.3);
+}
+
+.circle.moving-up {
+    animation: moveUp 0.45s ease-in-out forwards;
+    z-index: 200;
+    filter: brightness(1.3);
+}
+
+/* ==================== 拆分外框 ==================== */
+.split-frame {
+    position: absolute;
+    top: -8px;
+    height: calc(100% + 16px);
+    border: 2px dashed rgba(100, 160, 255, 0.35);
+    border-radius: 12px;
+    pointer-events: none;
+    z-index: 50;
+    transition: left 0.4s ease-in-out, width 0.4s ease-in-out, opacity 0.3s ease;
 }
 
 /* ==================== 分隔线 【不要修改】 ==================== */
@@ -369,8 +446,12 @@ body {
         <h1 class="title">归并排序</h1>
         <p class="desc">递归拆分再合并，每次合并两个有序子数组</p>
 
-        <div class="num-wrapper" id="numBox">
+        <div class="arr-container" id="arrBox">
             <div class="divider" id="divider"><span class="divider-label">已排序 ↑</span></div>
+        </div>
+
+        <div class="temp-container" id="tempBox">
+            <span class="temp-label">临时数组 tmp[]</span>
         </div>
 
         <div class="comment-box" id="commentBox">🎮 点击「开始」按钮启动排序动画</div>
@@ -422,7 +503,7 @@ body {
 </div>
 
 <script>
-// ==================== 【必填④】归并排序 Java 代码 ====================
+// ==================== 归并排序 Java 代码 ====================
 
 const JAVA_CODE = [
     'public static void mergeSort(int[] a, int l, int r) {',   // 1
@@ -447,16 +528,16 @@ const JAVA_CODE = [
     '}',                                                         // 20
 ];
 
-const LINE_SPLIT    = 3;
+const LINE_SPLIT     = 3;
 const LINE_RECURSE_L = 4;
 const LINE_RECURSE_R = 5;
 const LINE_MERGE     = 6;
+const LINE_TMP       = 10;
 const LINE_COMPARE   = 13;
-const LINE_MOVE      = 13;
 const LINE_COPYBACK  = 19;
 const INIT_ARR = [5, 3, 8, 4, 2];
 
-// ==================== 状态变量 【不要修改】 ====================
+// ==================== 状态变量 ====================
 let arr = [];
 let circleOrder = [];
 let comparisons = 0;
@@ -465,9 +546,8 @@ let loops = 0;
 let isRunning = false;
 let isPaused = false;
 let generatorRef = null;
-let stepGen = null;
 
-// ==================== 工具函数 【不要修改】 ====================
+// ==================== 工具函数 ====================
 
 function getDelay() {
     return 1350 - parseInt(document.getElementById('speedSlider').value) * 120;
@@ -478,6 +558,17 @@ function sleep(ms) {
 }
 function abortSleep() { if (sleep._t) { clearTimeout(sleep._t); sleep._t = null; } }
 
+function getPos() {
+    const box = document.getElementById('arrBox');
+    const w = box.clientWidth, cw = 90, n = arr.length;
+    const gap = n > 1 ? (w - cw * n) / (n - 1) : 0;
+    return { w, cw, gap };
+}
+function posLeft(pos) {
+    const { cw, gap } = getPos();
+    return pos * (cw + gap);
+}
+
 function getCircleAt(pos) {
     return document.getElementById('circle-' + circleOrder[pos]);
 }
@@ -487,17 +578,6 @@ function setCircleState(pos, state) {
 }
 function getEl(id) {
     return document.getElementById('circle-' + id);
-}
-
-function getPos() {
-    const box = document.getElementById('numBox');
-    const w = box.clientWidth, cw = 90, n = arr.length;
-    const gap = n > 1 ? (w - cw * n) / (n - 1) : 0;
-    return { w, cw, gap };
-}
-function posLeft(pos) {
-    const { cw, gap } = getPos();
-    return pos * (cw + gap);
 }
 
 function updateStats() {
@@ -518,7 +598,69 @@ function updateDivider(sortedCount) {
     div.classList.add('show');
 }
 
-// ==================== 渲染函数 【不要修改】 ====================
+// ==================== 拆分外框 ====================
+
+function showSplitFrame(l, r) {
+    removeSplitFrame();
+    const box = document.getElementById('arrBox');
+    const frame = document.createElement('div');
+    frame.className = 'split-frame';
+    frame.id = 'splitFrame';
+    const left = posLeft(l) - 6;
+    const right = posLeft(r) + 90 + 6;
+    frame.style.left = left + 'px';
+    frame.style.width = (right - left) + 'px';
+    box.appendChild(frame);
+}
+
+function removeSplitFrame() {
+    const old = document.getElementById('splitFrame');
+    if (old) old.remove();
+}
+
+// ==================== 临时数组工具 ====================
+
+function showTemp() {
+    document.getElementById('tempBox').classList.add('show');
+}
+function hideTemp() {
+    const box = document.getElementById('tempBox');
+    box.classList.remove('show');
+    // 移除临时元素
+    box.querySelectorAll('.circle').forEach(el => el.remove());
+}
+
+function posLeftTemp(idx) {
+    const box = document.getElementById('tempBox');
+    const w = box.clientWidth, cw = 70, n = arr.length;
+    const gap = n > 1 ? (w - cw * n) / (n - 1) : 0;
+    return idx * (cw + gap);
+}
+
+function createTempEl(idx, value) {
+    const box = document.getElementById('tempBox');
+    const div = document.createElement('div');
+    div.className = 'circle temp-el';
+    div.id = 'temp-' + idx;
+    div.textContent = value;
+    div.style.left = posLeftTemp(idx) + 'px';
+    div.style.width = '70px';
+    div.style.height = '70px';
+    div.style.fontSize = '26px';
+    box.appendChild(div);
+    return div;
+}
+
+function getTempEl(idx) {
+    return document.getElementById('temp-' + idx);
+}
+
+function clearTemp() {
+    const box = document.getElementById('tempBox');
+    box.querySelectorAll('.circle').forEach(el => el.remove());
+}
+
+// ==================== 渲染函数 ====================
 
 function initRender() {
     arr = [...INIT_ARR];
@@ -528,7 +670,7 @@ function initRender() {
 }
 
 function renderCircles() {
-    const box = document.getElementById('numBox');
+    const box = document.getElementById('arrBox');
     const divider = document.getElementById('divider');
     box.innerHTML = '';
     box.appendChild(divider);
@@ -585,14 +727,22 @@ async function* mergeGen(l, m, r) {
     for (let k = m + 1; k <= r; k++) setCircleState(k, 'right-part');
 
     renderCode(LINE_MERGE);
-    setComment(`归并 [${l}..${m}] 和 [${m+1}..${r}]`);
+    setComment(`合并 [${l}..${m}] 和 [${m+1}..${r}]`);
     await sleep(getDelay());
-    if (isPaused) yield 'paused';
+    if (isPaused) yield;
 
-    // 归并过程
+    // 创建临时数组
+    showTemp();
+    clearTemp();
+    renderCode(LINE_TMP);
+    setComment(`创建 tmp[${r - l + 1}]`);
+    await sleep(getDelay() * 0.5);
+    if (isPaused) yield;
+
     const tmp = [];
-    let i = l, j = m + 1;
+    let i = l, j = m + 1, k = 0;
 
+    // 双指针比较，元素下移到临时数组
     while (i <= m && j <= r) {
         comparisons++;
         setCircleState(i, 'active');
@@ -601,55 +751,130 @@ async function* mergeGen(l, m, r) {
         setComment(`比较 a[${i}]=${arr[i]} 和 a[${j}]=${arr[j]}`);
         updateStats();
         await sleep(getDelay() * 0.7);
-        if (isPaused) yield 'paused';
+        if (isPaused) yield;
 
         if (arr[i] <= arr[j]) {
-            tmp.push(arr[i]);
-            setCircleState(i, 'left-part');
+            // 左边更小，下移到 tmp
+            const chosenPos = i;
+            const el = getCircleAt(chosenPos);
+            if (el) {
+                el.className = 'circle moving-down';
+                await sleep(450);
+                el.className = 'circle placeholder';
+                el.textContent = '';
+            }
+
+            tmp.push(arr[chosenPos]);
+            createTempEl(k, arr[chosenPos]);
+            swaps++;
+            updateStats();
+
+            setComment(`a[${chosenPos}]=${arr[chosenPos]} 移入 tmp[${k}]`);
+            await sleep(getDelay() * 0.3);
+            if (isPaused) yield;
+
+            setCircleState(chosenPos, 'left-part');
             i++;
         } else {
-            tmp.push(arr[j]);
-            setCircleState(j, 'right-part');
+            // 右边更小，下移到 tmp
+            const chosenPos = j;
+            const el = getCircleAt(chosenPos);
+            if (el) {
+                el.className = 'circle moving-down';
+                await sleep(450);
+                el.className = 'circle placeholder';
+                el.textContent = '';
+            }
+
+            tmp.push(arr[chosenPos]);
+            createTempEl(k, arr[chosenPos]);
+            swaps++;
+            updateStats();
+
+            setComment(`a[${chosenPos}]=${arr[chosenPos]} 移入 tmp[${k}]`);
+            await sleep(getDelay() * 0.3);
+            if (isPaused) yield;
+
+            setCircleState(chosenPos, 'right-part');
             j++;
         }
+        k++;
     }
 
+    // 左半部分剩余
     while (i <= m) {
-        tmp.push(arr[i]);
-        i++;
-    }
-    while (j <= r) {
-        tmp.push(arr[j]);
-        j++;
-    }
-
-    // 将归并结果写回数组，带动画
-    for (let k = 0; k < tmp.length; k++) {
-        arr[l + k] = tmp[k];
-        swaps++;
-
-        // 更新小球文字和位置
-        const el = getCircleAt(l + k);
+        const el = getCircleAt(i);
         if (el) {
-            el.textContent = tmp[k];
+            el.className = 'circle moving-down';
+            await sleep(450);
+            el.className = 'circle placeholder';
+            el.textContent = '';
+        }
+        tmp.push(arr[i]);
+        createTempEl(k, arr[i]);
+        swaps++;
+        updateStats();
+        setComment(`剩余 a[${i}]=${arr[i]} 移入 tmp[${k}]`);
+        await sleep(getDelay() * 0.3);
+        if (isPaused) yield;
+        setCircleState(i, 'left-part');
+        i++; k++;
+    }
+
+    // 右半部分剩余
+    while (j <= r) {
+        const el = getCircleAt(j);
+        if (el) {
+            el.className = 'circle moving-down';
+            await sleep(450);
+            el.className = 'circle placeholder';
+            el.textContent = '';
+        }
+        tmp.push(arr[j]);
+        createTempEl(k, arr[j]);
+        swaps++;
+        updateStats();
+        setComment(`剩余 a[${j}]=${arr[j]} 移入 tmp[${k}]`);
+        await sleep(getDelay() * 0.3);
+        if (isPaused) yield;
+        setCircleState(j, 'right-part');
+        j++; k++;
+    }
+
+    // 回填阶段：tmp → 原数组，绿色
+    renderCode(LINE_COPYBACK);
+    setComment(`回填 tmp[] → a[${l}..${r}]`);
+    await sleep(getDelay() * 0.5);
+    if (isPaused) yield;
+
+    for (let t = 0; t < tmp.length; t++) {
+        const targetPos = l + t;
+        arr[targetPos] = tmp[t];
+
+        // 临时元素上移回原数组
+        const tempEl = getTempEl(t);
+        if (tempEl) {
+            tempEl.className = 'circle moving-up';
+            await sleep(450);
+            tempEl.remove();
         }
 
-        setCircleState(l + k, 'active');
-        renderCode(LINE_COPYBACK);
-        setComment(`写回 a[${l + k}] = ${tmp[k]}`);
-        updateStats();
-        await sleep(getDelay() * 0.4);
-        if (isPaused) yield 'paused';
+        // 更新原数组元素
+        const mainEl = getCircleAt(targetPos);
+        if (mainEl) {
+            mainEl.textContent = tmp[t];
+            mainEl.className = 'circle sorted';
+        }
+        circleOrder[targetPos] = targetPos;
 
-        setCircleState(l + k, 'sorted');
+        setComment(`a[${targetPos}] = ${tmp[t]}`);
+        await sleep(getDelay() * 0.3);
+        if (isPaused) yield;
     }
 
-    // 如果是整个数组的归并，隐藏分隔线
-    if (l === 0 && r === arr.length - 1) {
-        updateDivider(arr.length);
-    } else {
-        updateDivider(r + 1);
-    }
+    // 清理
+    hideTemp();
+    removeSplitFrame();
 
     await sleep(getDelay() * 0.3);
 }
@@ -658,38 +883,31 @@ async function* mergeSortRecursive(l, r) {
     if (l < r) {
         const m = Math.floor((l + r) / 2);
 
+        // 拆分阶段：显示外框收窄
+        showSplitFrame(l, r);
         renderCode(LINE_SPLIT);
         setComment(`拆分 [${l}..${r}] → [${l}..${m}] + [${m+1}..${r}]`);
-        await sleep(getDelay() * 0.4);
-        if (isPaused) yield 'paused';
+        await sleep(getDelay() * 0.6);
+        if (isPaused) yield;
 
         // 递归左半部分
         renderCode(LINE_RECURSE_L);
-        const leftGen = mergeSortRecursive(l, m);
-        let result = await leftGen.next();
-        while (!result.done) {
-            yield result.value;
-            result = await leftGen.next();
-        }
+        setComment(`递归左半 [${l}..${m}]`);
+        await sleep(getDelay() * 0.3);
+        if (isPaused) yield;
+        yield* mergeSortRecursive(l, m);
 
         // 递归右半部分
         renderCode(LINE_RECURSE_R);
-        const rightGen = mergeSortRecursive(m + 1, r);
-        result = await rightGen.next();
-        while (!result.done) {
-            yield result.value;
-            result = await rightGen.next();
-        }
+        setComment(`递归右半 [${m+1}..${r}]`);
+        await sleep(getDelay() * 0.3);
+        if (isPaused) yield;
+        yield* mergeSortRecursive(m + 1, r);
 
         // 归并
-        const mg = mergeGen(l, m, r);
-        result = await mg.next();
-        while (!result.done) {
-            yield result.value;
-            result = await mg.next();
-        }
+        yield* mergeGen(l, m, r);
     } else {
-        // 单个元素，标记已排序
+        // 单个元素
         setCircleState(l, 'sorted');
         await sleep(getDelay() * 0.15);
     }
@@ -701,18 +919,13 @@ async function* sortGenerator() {
     loops = 0;
     updateDivider(0);
 
-    const gen = mergeSortRecursive(0, arr.length - 1);
-    let result = await gen.next();
-    while (!result.done) {
-        yield result.value;
-        result = await gen.next();
-    }
+    yield* mergeSortRecursive(0, arr.length - 1);
 
     updateDivider(arr.length);
     await sleep(300);
 }
 
-// ==================== 控制逻辑 【不要修改】 ====================
+// ==================== 控制逻辑 ====================
 
 async function startSort() {
     if (isRunning) return;
@@ -748,30 +961,16 @@ function togglePause() {
     setComment(isPaused ? '⏸ 已暂停' : '▶ 继续排序...');
 }
 
-async function stepOnce() {
-    if (isRunning) return;
-    if (!stepGen) {
-        comparisons = 0; swaps = 0; loops = 0; updateStats();
-        arr = [...INIT_ARR]; renderCircles(); await sleep(50);
-        stepGen = sortGenerator();
-    }
-    const result = await stepGen.next();
-    if (result.done) {
-        stepGen = null;
-        renderCode(0);
-        setComment('🎉 排序完成！');
-        document.getElementById('doneBadge').classList.add('show');
-    }
-}
-
 function resetAll() {
     isRunning = false; isPaused = false;
-    abortSleep(); generatorRef = null; stepGen = null;
+    abortSleep(); generatorRef = null;
     arr = [...INIT_ARR]; comparisons = 0; swaps = 0; loops = 0;
     document.getElementById('btnStart').textContent = '▶ 开始';
     document.getElementById('btnPause').textContent = '⏸ 暂停';
     document.getElementById('doneBadge').classList.remove('show');
     document.getElementById('divider').classList.remove('show');
+    hideTemp();
+    removeSplitFrame();
     setComment('🎮 点击「开始」按钮启动排序动画');
     initRender();
 }
