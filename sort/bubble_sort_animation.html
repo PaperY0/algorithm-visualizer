@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>冒泡排序 - 排序动画</title>
+<style>
+/* ==================== 全局基础样式 【不要修改】 ==================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: #05070f;
+    color: #fff;
+    font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+    overflow: hidden;
+}
+
+/* ==================== 页面整体骨架 【不要修改】 ==================== */
+.container {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    gap: 12px;
+    padding: 16px;
+}
+
+.left-panel, .right-panel {
+    flex: 1;
+    background: rgba(12, 15, 25, 0.85);
+    border: 1px solid rgba(100, 150, 255, 0.2);
+    border-radius: 16px;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 面板光晕装饰 【不要修改】 */
+.left-panel::before, .right-panel::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 50% 50%, rgba(60, 100, 255, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+/* ==================== 左侧标题区域 【不要修改】 ==================== */
+.title {
+    font-size: 42px;
+    font-weight: bold;
+    margin-bottom: 16px;
+    color: #ffffff;
+    text-shadow: 0 0 20px rgba(100, 150, 255, 0.3);
+    letter-spacing: 4px;
+}
+
+.desc {
+    font-size: 20px;
+    color: #7a8ba8;
+    margin-bottom: 50px;
+    letter-spacing: 1px;
+}
+
+/* ==================== 数字圆圈容器 【不要修改】 ==================== */
+.num-wrapper {
+    position: relative;
+    width: 80%;
+    height: 130px;
+}
+
+/* ==================== 数字圆圈核心样式 【不要修改】 ==================== */
+.circle {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    font-weight: bold;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    /* 核心过渡：left 实现平滑位移，background/box-shadow/border/filter 实现状态切换 */
+    transition: left 0.45s ease-in-out, background 0.25s ease, box-shadow 0.25s ease, border 0.25s ease, filter 0.25s ease;
+    cursor: default;
+    user-select: none;
+}
+
+/* 普通蓝色圆圈 【边框必须保留】 */
+.circle.normal {
+    border: 2px solid rgba(100, 160, 255, 0.6);
+    background: rgba(20, 30, 60, 0.7);
+    color: #e0e8ff;
+    box-shadow: 0 0 12px rgba(80, 140, 255, 0.2),
+                inset 0 0 8px rgba(80, 140, 255, 0.05);
+    z-index: 1;
+}
+
+/* 高亮比较 - 橙色 【不要修改】 */
+.circle.active {
+    background: linear-gradient(135deg, #ff7823, #ff9a44);
+    color: #fff;
+    box-shadow: 0 0 24px rgba(255, 120, 35, 0.6),
+                0 0 48px rgba(255, 120, 35, 0.2);
+    border: none;
+    z-index: 100;
+    filter: brightness(1.15);
+}
+
+/* 已排序 - 绿色 【不要修改】 */
+.circle.sorted {
+    background: rgba(30, 180, 80, 0.7);
+    border: 2px solid rgba(60, 220, 100, 0.6);
+    color: #fff;
+    box-shadow: 0 0 12px rgba(60, 220, 100, 0.2);
+    z-index: 2;
+}
+
+/* ==================== 交换动画：两球上浮 → 交叉 → 下落 【不要修改】 ==================== */
+@keyframes liftSwapA {
+    0%   { transform: translateY(-50%) scale(1); }
+    30%  { transform: translateY(calc(-50% - 80px)) scale(1.05); }
+    70%  { transform: translateY(calc(-50% - 80px)) scale(1.05); }
+    100% { transform: translateY(-50%) scale(1); }
+}
+
+@keyframes liftSwapB {
+    0%   { transform: translateY(-50%) scale(1); }
+    30%  { transform: translateY(calc(-50% + 80px)) scale(1.05); }
+    70%  { transform: translateY(calc(-50% + 80px)) scale(1.05); }
+    100% { transform: translateY(-50%) scale(1); }
+}
+
+/* swap-a/swap-b 必须包含完整视觉样式，否则动画期间边框/背景会消失 */
+.circle.swap-a {
+    animation: liftSwapA 0.8s ease-in-out forwards;
+    transition: left 0.4s ease-in-out 0.3s;
+    z-index: 100;
+    border: 2px solid rgba(100, 160, 255, 0.6);
+    background: rgba(20, 30, 60, 0.7);
+    color: #e0e8ff;
+    box-shadow: 0 0 12px rgba(80, 140, 255, 0.2),
+                inset 0 0 8px rgba(80, 140, 255, 0.05);
+}
+
+.circle.swap-b {
+    animation: liftSwapB 0.8s ease-in-out forwards;
+    transition: left 0.4s ease-in-out 0.3s;
+    z-index: 100;
+    border: 2px solid rgba(100, 160, 255, 0.6);
+    background: rgba(20, 30, 60, 0.7);
+    color: #e0e8ff;
+    box-shadow: 0 0 12px rgba(80, 140, 255, 0.2),
+                inset 0 0 8px rgba(80, 140, 255, 0.05);
+}
+
+/* ==================== 分隔线 【不要修改】 ==================== */
+.divider {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 0;
+    border-left: 2px dashed rgba(100, 160, 255, 0.35);
+    display: none;
+    z-index: 50;
+    pointer-events: none;
+}
+.divider.show { display: block; }
+.divider-label {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: rgba(100, 160, 255, 0.5);
+    white-space: nowrap;
+    letter-spacing: 1px;
+}
+
+/* ==================== 注释提示区域 【不要修改】 ==================== */
+.comment-box {
+    margin-top: 40px;
+    padding: 12px 24px;
+    background: rgba(100, 140, 255, 0.08);
+    border: 1px solid rgba(100, 140, 255, 0.12);
+    border-radius: 10px;
+    color: #8aa0c0;
+    font-size: 15px;
+    text-align: center;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+/* ==================== 统计信息 【不要修改】 ==================== */
+.stats-row {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    margin-top: 20px;
+}
+
+.stat-item { text-align: center; }
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #ff9040;
+    text-shadow: 0 0 10px rgba(255, 144, 64, 0.3);
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #5a6a80;
+    margin-top: 4px;
+    letter-spacing: 1px;
+}
+
+/* ==================== 控制按钮 【不要修改】 ==================== */
+.controls-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.ctrl-btn {
+    background: rgba(100, 140, 255, 0.1);
+    border: 1px solid rgba(100, 140, 255, 0.25);
+    color: #c0d0f0;
+    padding: 10px 28px;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    letter-spacing: 1px;
+}
+
+.ctrl-btn:hover {
+    background: rgba(100, 140, 255, 0.25);
+    border-color: rgba(100, 140, 255, 0.5);
+    box-shadow: 0 0 12px rgba(100, 140, 255, 0.15);
+}
+
+.ctrl-btn:active { transform: scale(0.97); }
+
+.ctrl-btn.primary {
+    background: rgba(100, 180, 255, 0.2);
+    border-color: rgba(100, 180, 255, 0.4);
+}
+
+/* ==================== 右侧代码展示区 【不要修改】 ==================== */
+.right-panel {
+    justify-content: flex-start;
+    padding-top: 30px;
+}
+
+.code-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(100, 140, 255, 0.1);
+    width: 100%;
+}
+
+.code-dot { width: 12px; height: 12px; border-radius: 50%; }
+.code-dot-red { background: #ff5f57; }
+.code-dot-yellow { background: #ffbd2e; }
+.code-dot-green { background: #28c840; }
+
+.code-filename {
+    color: #5a6a80;
+    font-size: 13px;
+    margin-left: 12px;
+    font-family: Consolas, monospace;
+}
+
+/* 复杂度信息栏 【不要修改】 */
+.info-bar {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 20px;
+    padding: 8px 16px;
+    background: rgba(100, 140, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(100, 140, 255, 0.08);
+    width: 100%;
+}
+
+.info-item { color: #5a6a80; font-size: 13px; }
+.info-value { color: #a0b8e0; font-weight: 600; }
+
+/* 代码块 【不要修改】 */
+.code-block {
+    width: 100%;
+    padding: 16px 0;
+    font-family: 'Consolas', 'Fira Code', 'Courier New', monospace;
+    font-size: 15px;
+    line-height: 2;
+    color: #abb2bf;
+    overflow-x: auto;
+}
+
+.code-line {
+    display: block;
+    padding: 1px 12px;
+    border-radius: 4px;
+    border-left: 3px solid transparent;
+    white-space: pre;
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.code-line.highlight {
+    background: rgba(180, 160, 50, 0.2);
+    border-left: 3px solid #c8a832;
+}
+
+.line-num {
+    color: #3a4050;
+    display: inline-block;
+    width: 28px;
+    text-align: right;
+    margin-right: 16px;
+    user-select: none;
+}
+
+/* ==================== 语法高亮 【不要修改】 ==================== */
+.syn-keyword  { color: #c678dd; }
+.syn-type     { color: #e5c07b; }
+.syn-func     { color: #61afef; }
+.syn-number   { color: #56b6c2; }
+.syn-string   { color: #98c379; }
+.syn-comment  { color: #5c6370; font-style: italic; }
+.syn-op       { color: #abb2bf; }
+.syn-var      { color: #e0e0e0; }
+
+/* ==================== 速度控制 【不要修改】 ==================== */
+.speed-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.speed-label { color: #5a6a80; font-size: 13px; }
+
+.speed-slider {
+    -webkit-appearance: none;
+    width: 120px;
+    height: 4px;
+    background: rgba(100, 140, 255, 0.2);
+    border-radius: 2px;
+    outline: none;
+}
+
+.speed-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #6496ff;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(100, 150, 255, 0.4);
+}
+
+.speed-value { color: #a0b8e0; font-size: 13px; min-width: 40px; }
+
+/* ==================== 完成提示 【不要修改】 ==================== */
+.done-badge {
+    display: none;
+    margin-top: 12px;
+    padding: 8px 24px;
+    background: rgba(30, 180, 80, 0.15);
+    border: 1px solid rgba(60, 220, 100, 0.3);
+    border-radius: 8px;
+    color: #4ade80;
+    font-size: 14px;
+    letter-spacing: 2px;
+}
+.done-badge.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ==================== 页面结构 【不要修改】 ==================== -->
+<div class="container">
+    <!-- ========== 左侧算法可视化区 ========== -->
+    <div class="left-panel">
+        <!-- 【必填①】算法标题 -->
+        <h1 class="title">冒泡排序</h1>
+        <p class="desc">相邻元素两两比较，大的数字一步步冒到后面</p>
+
+        <div class="num-wrapper" id="numBox">
+            <div class="divider" id="divider"><span class="divider-label">已排序 ↓</span></div>
+        </div>
+
+        <div class="comment-box" id="commentBox">🎮 点击「开始」按钮启动排序动画</div>
+
+        <!-- 统计信息 -->
+        <div class="stats-row">
+            <div class="stat-item">
+                <div class="stat-value" id="loopCount">0</div>
+                <div class="stat-label">循环次数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="compCount">0</div>
+                <div class="stat-label">比较次数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="swapCount">0</div>
+                <div class="stat-label">交换次数</div>
+            </div>
+        </div>
+
+        <!-- 控制按钮 -->
+        <div class="controls-row">
+            <button class="ctrl-btn primary" id="btnStart" onclick="startSort()">▶ 开始</button>
+            <button class="ctrl-btn" id="btnPause" onclick="togglePause()">⏸ 暂停</button>
+            <button class="ctrl-btn" id="btnStep" onclick="stepOnce()">⏭ 单步</button>
+            <button class="ctrl-btn" id="btnReset" onclick="resetAll()">🔄 重置</button>
+        </div>
+
+        <!-- 速度滑块 -->
+        <div class="speed-control">
+            <span class="speed-label">动画速度</span>
+            <input type="range" class="speed-slider" id="speedSlider" min="1" max="10" value="5" oninput="updateSpeed()">
+            <span class="speed-value" id="speedValue">5</span>
+        </div>
+
+        <div class="done-badge" id="doneBadge">🎉 排序完成！</div>
+    </div>
+
+    <!-- ========== 右侧代码展示区 ========== -->
+    <div class="right-panel">
+        <div class="code-header">
+            <div class="code-dot code-dot-red"></div>
+            <div class="code-dot code-dot-yellow"></div>
+            <div class="code-dot code-dot-green"></div>
+            <!-- 【必填②】Java 文件名 -->
+            <span class="code-filename">BubbleSort.java</span>
+        </div>
+
+        <div class="info-bar">
+            <!-- 【必填③】复杂度信息 -->
+            <div class="info-item">⏱ 时间: <span class="info-value">O(n²)</span></div>
+            <div class="info-item">💾 空间: <span class="info-value">O(1)</span></div>
+            <div class="info-item">📊 稳定性: <span class="info-value">稳定</span></div>
+        </div>
+
+        <div class="code-block" id="codeBlock"></div>
+    </div>
+</div>
+
+<script>
+// ==================== 【必填④】算法数据和 Java 代码 ====================
+
+// Java 代码（右侧展示用）—— 替换成你的算法代码
+const JAVA_CODE = [
+    'public static void bubbleSort(int[] a) {',
+    '    int n = a.length;',
+    '    for (int i = 0; i < n - 1; i++) {',
+    '        for (int j = 0; j < n - i - 1; j++) {',
+    '            if (a[j] > a[j + 1]) {',
+    '                int temp = a[j];',
+    '                a[j] = a[j + 1];',
+    '                a[j + 1] = temp;',
+    '            }',
+    '        }',
+    '    }',
+    '}',
+];
+
+// 行号常量（对应 JAVA_CODE 的行号，从1开始）
+const LINE_COMPARE   = 5;   // if (a[j] > a[j + 1])
+const LINE_SWAP_TEMP = 6;   // int temp = a[j];
+const LINE_SWAP_A    = 7;   // a[j] = a[j + 1];
+const LINE_SWAP_B    = 8;   // a[j + 1] = temp;
+
+// 初始数组
+const INIT_ARR = [5, 3, 8, 4, 2];
+
+// ==================== 状态变量 【不要修改】 ====================
+let arr = [];
+let circleOrder = [];       // circleOrder[pos] = 圆圈ID编号
+let comparisons = 0;
+let swaps = 0;
+let loops = 0;
+let isRunning = false;
+let isPaused = false;
+let generatorRef = null;
+let stepGen = null;
+
+// ==================== 工具函数 【不要修改】 ====================
+
+// 速度：毫秒值，slider 1→1200ms, 10→150ms
+function getDelay() {
+    return 1350 - parseInt(document.getElementById('speedSlider').value) * 120;
+}
+
+function sleep(ms) {
+    return new Promise(r => { const t = setTimeout(r, ms); sleep._t = t; });
+}
+function abortSleep() { if (sleep._t) { clearTimeout(sleep._t); sleep._t = null; } }
+
+// 通过 circleOrder 获取指定位置上的圆圈元素
+function getCircleAt(pos) {
+    return document.getElementById('circle-' + circleOrder[pos]);
+}
+
+// 设置指定位置上圆圈的状态（class 完全替换）
+function setCircleState(pos, state) {
+    const el = getCircleAt(pos);
+    if (el) el.className = 'circle ' + state;
+}
+
+// 通过 ID 获取元素
+function getEl(id) {
+    return document.getElementById('circle-' + id);
+}
+
+// 获取容器尺寸和间距
+function getPos() {
+    const box = document.getElementById('numBox');
+    const w = box.clientWidth, cw = 90, n = arr.length;
+    const gap = n > 1 ? (w - cw * n) / (n - 1) : 0;
+    return { w, cw, gap };
+}
+
+// 计算某个位置的 left 像素值
+function posLeft(pos) {
+    const { cw, gap } = getPos();
+    return pos * (cw + gap);
+}
+
+// 更新统计显示
+function updateStats() {
+    document.getElementById('loopCount').textContent = loops;
+    document.getElementById('compCount').textContent = comparisons;
+    document.getElementById('swapCount').textContent = swaps;
+}
+
+// 设置底部注释文字
+function setComment(text) {
+    document.getElementById('commentBox').textContent = text;
+}
+
+// 更新分隔线位置
+function updateDivider(sortedCount) {
+    const div = document.getElementById('divider');
+    if (sortedCount <= 0) { div.classList.remove('show'); return; }
+    if (sortedCount >= arr.length) { div.classList.remove('show'); return; }
+    const { cw, gap } = getPos();
+    div.style.left = (sortedCount * (cw + gap) - gap / 2) + 'px';
+    div.classList.add('show');
+}
+
+// ==================== 交换动画 【不要修改】 ====================
+// 两球上浮 → 交叉 → 下落（0.85s 总时长）
+// 使用 classList.add/remove 保留已有状态类，避免丢失边框
+function animSwap(aId, bId, aPos, bPos) {
+    return new Promise(resolve => {
+        const elA = getEl(aId);
+        const elB = getEl(bId);
+        if (!elA || !elB) { resolve(); return; }
+
+        elA.classList.add('swap-a');
+        elB.classList.add('swap-b');
+
+        const leftA = posLeft(aPos);
+        const leftB = posLeft(bPos);
+        elA.style.left = leftB + 'px';
+        elB.style.left = leftA + 'px';
+
+        [circleOrder[aPos], circleOrder[bPos]] = [circleOrder[bPos], circleOrder[aPos]];
+
+        setTimeout(() => {
+            elA.classList.remove('swap-a');
+            elB.classList.remove('swap-b');
+            resolve();
+        }, 850);
+    });
+}
+
+// ==================== 渲染函数 【不要修改】 ====================
+
+function initRender() {
+    arr = [...INIT_ARR];
+    renderCircles();
+    renderCode(0);
+    updateStats();
+}
+
+function renderCircles() {
+    const box = document.getElementById('numBox');
+    const divider = document.getElementById('divider');
+    box.innerHTML = '';
+    box.appendChild(divider);
+
+    const { cw, gap } = getPos();
+    circleOrder = [];
+    arr.forEach((val, idx) => {
+        const div = document.createElement('div');
+        div.className = 'circle normal';
+        div.id = 'circle-' + idx;
+        div.textContent = val;
+        div.style.left = (idx * (cw + gap)) + 'px';
+        box.appendChild(div);
+        circleOrder.push(idx);
+    });
+}
+
+function renderCode(highlightLine) {
+    const block = document.getElementById('codeBlock');
+    let html = '';
+    JAVA_CODE.forEach((line, i) => {
+        const lineNum = i + 1;
+        const cls = highlightLine === lineNum ? 'code-line highlight' : 'code-line';
+        let s = escapeHtml(line);
+        const ci = s.indexOf('//');
+        if (ci !== -1) {
+            s = highlightTokens(s.substring(0, ci)) + `<span class="syn-comment">${s.substring(ci)}</span>`;
+        } else {
+            s = highlightTokens(s);
+        }
+        html += `<span class="${cls}"><span class="line-num">${lineNum}</span>${s}</span>`;
+    });
+    block.innerHTML = html;
+}
+
+function highlightTokens(s) {
+    s = s.replace(/\b(void|int|for|if|while|return|class|public|private|static|new|true|false|null|else)\b/g, '<span class="syn-keyword">$1</span>');
+    s = s.replace(/\b(\d+)\b/g, '<span class="syn-number">$1</span>');
+    s = s.replace(/\b([a-zA-Z_]\w*)\s*(?=\()/g, '<span class="syn-func">$1</span>');
+    return s;
+}
+function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ==================== 冒泡排序生成器 ====================
+// 【必填⑤】替换 sortGenerator 的循环体和动画逻辑
+
+async function* sortGenerator() {
+    const n = arr.length;
+    comparisons = 0;
+    swaps = 0;
+    updateDivider(0);
+
+    for (let i = 0; i < n - 1; i++) {
+        loops = i + 1;
+        updateStats();
+
+        for (let j = 0; j < n - i - 1; j++) {
+            // 高亮正在比较的两个元素（橙色）
+            comparisons++;
+            setCircleState(j, 'active');
+            setCircleState(j + 1, 'active');
+            renderCode(LINE_COMPARE);
+            setComment(`比较 a[${j}]=${arr[j]} 和 a[${j+1}]=${arr[j+1]}`);
+            updateStats();
+            await sleep(getDelay());
+            if (isPaused) yield 'paused';
+
+            if (arr[j] > arr[j + 1]) {
+                // 需要交换
+                renderCode(LINE_SWAP_TEMP);
+                setComment(`交换 a[${j}]=${arr[j]} 和 a[${j+1}]=${arr[j+1]}`);
+                await sleep(getDelay() * 0.3);
+                if (isPaused) yield 'paused';
+
+                // 先清除高亮状态（恢复 normal），再执行交换动画
+                setCircleState(j, 'normal');
+                setCircleState(j + 1, 'normal');
+
+                renderCode(LINE_SWAP_A);
+                swaps++;
+                updateStats();
+
+                // 执行上浮-交叉-下落动画
+                await animSwap(circleOrder[j], circleOrder[j + 1], j, j + 1);
+
+                // 更新数组逻辑
+                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+
+                renderCode(LINE_SWAP_B);
+                await sleep(getDelay() * 0.2);
+                if (isPaused) yield 'paused';
+            } else {
+                // 不需要交换，取消高亮
+                setCircleState(j, 'normal');
+                setCircleState(j + 1, 'normal');
+                await sleep(getDelay() * 0.2);
+                if (isPaused) yield 'paused';
+            }
+        }
+
+        // 标记本轮最后一个元素已排序（绿色）
+        setCircleState(n - i - 1, 'sorted');
+        updateDivider(n - i - 1);
+    }
+
+    // 标记第一个元素也已排序
+    setCircleState(0, 'sorted');
+    updateDivider(n);
+    await sleep(300);
+}
+
+// ==================== 控制逻辑 【不要修改】 ====================
+
+async function startSort() {
+    if (isRunning) return;
+    isRunning = true;
+    isPaused = false;
+    document.getElementById('btnStart').textContent = '▶ 运行中';
+    document.getElementById('btnPause').textContent = '⏸ 暂停';
+    document.getElementById('doneBadge').classList.remove('show');
+
+    arr = [...INIT_ARR];
+    comparisons = 0;
+    swaps = 0;
+    loops = 0;
+    renderCircles();
+    await sleep(50);
+
+    generatorRef = sortGenerator();
+    for await (const _ of generatorRef) {
+        while (isPaused) await sleep(100);
+    }
+
+    renderCode(0);
+    setComment('🎉 排序完成！所有元素已按升序排列');
+    document.getElementById('doneBadge').classList.add('show');
+    isRunning = false;
+    document.getElementById('btnStart').textContent = '▶ 开始';
+}
+
+function togglePause() {
+    if (!isRunning) return;
+    isPaused = !isPaused;
+    document.getElementById('btnPause').textContent = isPaused ? '▶ 继续' : '⏸ 暂停';
+    setComment(isPaused ? '⏸ 已暂停，点击「继续」恢复' : '▶ 继续排序...');
+}
+
+async function stepOnce() {
+    if (isRunning) return;
+    if (!stepGen) {
+        comparisons = 0; swaps = 0; loops = 0; updateStats();
+        arr = [...INIT_ARR]; renderCircles(); await sleep(50);
+        stepGen = sortGenerator();
+    }
+    const result = await stepGen.next();
+    if (result.done) {
+        stepGen = null;
+        renderCode(0);
+        setComment('🎉 排序完成！所有元素已按升序排列');
+        document.getElementById('doneBadge').classList.add('show');
+    }
+}
+
+function resetAll() {
+    isRunning = false; isPaused = false;
+    abortSleep(); generatorRef = null; stepGen = null;
+    arr = [...INIT_ARR]; comparisons = 0; swaps = 0; loops = 0;
+    document.getElementById('btnStart').textContent = '▶ 开始';
+    document.getElementById('btnPause').textContent = '⏸ 暂停';
+    document.getElementById('doneBadge').classList.remove('show');
+    document.getElementById('divider').classList.remove('show');
+    setComment('🎮 点击「开始」按钮启动排序动画');
+    initRender();
+}
+
+function updateSpeed() {
+    document.getElementById('speedValue').textContent = document.getElementById('speedSlider').value;
+}
+
+// ==================== 窗口自适应 【不要修改】 ====================
+window.addEventListener('resize', () => { if (!isRunning) renderCircles(); });
+window.addEventListener('DOMContentLoaded', initRender);
+</script>
+</body>
+</html>

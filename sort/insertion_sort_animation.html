@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>插入排序 - 排序动画</title>
+<style>
+/* ==================== 全局基础样式 【不要修改】 ==================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: #05070f;
+    color: #fff;
+    font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+    overflow: hidden;
+}
+
+/* ==================== 页面整体骨架 【不要修改】 ==================== */
+.container {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    gap: 12px;
+    padding: 16px;
+}
+
+.left-panel, .right-panel {
+    flex: 1;
+    background: rgba(12, 15, 25, 0.85);
+    border: 1px solid rgba(100, 150, 255, 0.2);
+    border-radius: 16px;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.left-panel::before, .right-panel::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 50% 50%, rgba(60, 100, 255, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+/* ==================== 左侧标题区域 【不要修改】 ==================== */
+.title {
+    font-size: 42px;
+    font-weight: bold;
+    margin-bottom: 16px;
+    color: #ffffff;
+    text-shadow: 0 0 20px rgba(100, 150, 255, 0.3);
+    letter-spacing: 4px;
+}
+
+.desc {
+    font-size: 20px;
+    color: #7a8ba8;
+    margin-bottom: 50px;
+    letter-spacing: 1px;
+}
+
+/* ==================== 数字圆圈容器 【不要修改】 ==================== */
+.num-wrapper {
+    position: relative;
+    width: 80%;
+    height: 130px;
+}
+
+/* ==================== 数字圆圈核心样式 【不要修改】 ==================== */
+.circle {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    font-weight: bold;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: left 0.4s ease-in-out, background 0.25s ease,
+                box-shadow 0.25s ease, border 0.25s ease, filter 0.25s ease;
+    cursor: default;
+    user-select: none;
+}
+
+.circle.normal {
+    border: 2px solid rgba(100, 160, 255, 0.6);
+    background: rgba(20, 30, 60, 0.7);
+    color: #e0e8ff;
+    box-shadow: 0 0 12px rgba(80, 140, 255, 0.2),
+                inset 0 0 8px rgba(80, 140, 255, 0.05);
+    z-index: 1;
+}
+
+/* 提取的 key - 橙色 */
+.circle.active {
+    background: linear-gradient(135deg, #ff7823, #ff9a44);
+    color: #fff;
+    box-shadow: 0 0 24px rgba(255, 120, 35, 0.6),
+                0 0 48px rgba(255, 120, 35, 0.2);
+    border: none;
+    z-index: 100;
+    filter: brightness(1.15);
+}
+
+/* 右移中的元素 - 青色 */
+.circle.moving {
+    background: linear-gradient(135deg, #06b6d4, #22d3ee);
+    color: #fff;
+    box-shadow: 0 0 24px rgba(6, 182, 212, 0.6),
+                0 0 48px rgba(6, 182, 212, 0.2);
+    border: none;
+    z-index: 5;
+    filter: brightness(1.15);
+}
+
+/* 已排序 - 绿色 */
+.circle.sorted {
+    background: rgba(30, 180, 80, 0.7);
+    border: 2px solid rgba(60, 220, 100, 0.6);
+    color: #fff;
+    box-shadow: 0 0 12px rgba(60, 220, 100, 0.2);
+    z-index: 2;
+}
+
+/* ==================== 三段动画：上浮 → 平移 → 下落 【不要修改】 ==================== */
+@keyframes liftUp {
+    0%   { transform: translateY(-50%); }
+    100% { transform: translateY(calc(-50% - 80px)); }
+}
+
+@keyframes dropDown {
+    0%   { transform: translateY(calc(-50% - 80px)); }
+    100% { transform: translateY(-50%); }
+}
+
+@keyframes liftSwap {
+    0%   { transform: translateY(-50%); }
+    50%  { transform: translateY(calc(-50% - 80px)) scale(1.05); }
+    100% { transform: translateY(-50%); }
+}
+
+.circle.lift-up {
+    animation: liftUp 0.3s ease-out forwards;
+    z-index: 100;
+}
+
+.circle.drop-down {
+    animation: dropDown 0.3s ease-in forwards;
+    z-index: 100;
+}
+
+.circle.lift-swap {
+    animation: liftSwap 0.6s ease-in-out forwards;
+    z-index: 100;
+}
+
+/* ==================== 分隔线 【不要修改】 ==================== */
+.divider {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 0;
+    border-left: 2px dashed rgba(100, 160, 255, 0.35);
+    display: none;
+    z-index: 50;
+    pointer-events: none;
+}
+.divider.show { display: block; }
+.divider-label {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: rgba(100, 160, 255, 0.5);
+    white-space: nowrap;
+    letter-spacing: 1px;
+}
+
+/* ==================== 注释提示区域 【不要修改】 ==================== */
+.comment-box {
+    margin-top: 40px;
+    padding: 12px 24px;
+    background: rgba(100, 140, 255, 0.08);
+    border: 1px solid rgba(100, 140, 255, 0.12);
+    border-radius: 10px;
+    color: #8aa0c0;
+    font-size: 15px;
+    text-align: center;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+/* ==================== 统计信息 【不要修改】 ==================== */
+.stats-row {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    margin-top: 20px;
+}
+
+.stat-item { text-align: center; }
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #ff9040;
+    text-shadow: 0 0 10px rgba(255, 144, 64, 0.3);
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #5a6a80;
+    margin-top: 4px;
+    letter-spacing: 1px;
+}
+
+/* ==================== 控制按钮 【不要修改】 ==================== */
+.controls-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.ctrl-btn {
+    background: rgba(100, 140, 255, 0.1);
+    border: 1px solid rgba(100, 140, 255, 0.25);
+    color: #c0d0f0;
+    padding: 10px 28px;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    letter-spacing: 1px;
+}
+
+.ctrl-btn:hover {
+    background: rgba(100, 140, 255, 0.25);
+    border-color: rgba(100, 140, 255, 0.5);
+    box-shadow: 0 0 12px rgba(100, 140, 255, 0.15);
+}
+
+.ctrl-btn:active { transform: scale(0.97); }
+
+.ctrl-btn.primary {
+    background: rgba(100, 180, 255, 0.2);
+    border-color: rgba(100, 180, 255, 0.4);
+}
+
+/* ==================== 右侧代码展示区 【不要修改】 ==================== */
+.right-panel {
+    justify-content: flex-start;
+    padding-top: 30px;
+}
+
+.code-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(100, 140, 255, 0.1);
+    width: 100%;
+}
+
+.code-dot { width: 12px; height: 12px; border-radius: 50%; }
+.code-dot-red { background: #ff5f57; }
+.code-dot-yellow { background: #ffbd2e; }
+.code-dot-green { background: #28c840; }
+
+.code-filename {
+    color: #5a6a80;
+    font-size: 13px;
+    margin-left: 12px;
+    font-family: Consolas, monospace;
+}
+
+.info-bar {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 20px;
+    padding: 8px 16px;
+    background: rgba(100, 140, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(100, 140, 255, 0.08);
+    width: 100%;
+}
+
+.info-item { color: #5a6a80; font-size: 13px; }
+.info-value { color: #a0b8e0; font-weight: 600; }
+
+.code-block {
+    width: 100%;
+    padding: 16px 0;
+    font-family: 'Consolas', 'Fira Code', 'Courier New', monospace;
+    font-size: 15px;
+    line-height: 2;
+    color: #abb2bf;
+    overflow-x: auto;
+}
+
+.code-line {
+    display: block;
+    padding: 1px 12px;
+    border-radius: 4px;
+    border-left: 3px solid transparent;
+    white-space: pre;
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.code-line.highlight {
+    background: rgba(180, 160, 50, 0.2);
+    border-left: 3px solid #c8a832;
+}
+
+.line-num {
+    color: #3a4050;
+    display: inline-block;
+    width: 28px;
+    text-align: right;
+    margin-right: 16px;
+    user-select: none;
+}
+
+/* ==================== 语法高亮 【不要修改】 ==================== */
+.syn-keyword  { color: #c678dd; }
+.syn-type     { color: #e5c07b; }
+.syn-func     { color: #61afef; }
+.syn-number   { color: #56b6c2; }
+.syn-string   { color: #98c379; }
+.syn-comment  { color: #5c6370; font-style: italic; }
+.syn-op       { color: #abb2bf; }
+.syn-var      { color: #e0e0e0; }
+
+/* ==================== 速度控制 【不要修改】 ==================== */
+.speed-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.speed-label { color: #5a6a80; font-size: 13px; }
+
+.speed-slider {
+    -webkit-appearance: none;
+    width: 120px;
+    height: 4px;
+    background: rgba(100, 140, 255, 0.2);
+    border-radius: 2px;
+    outline: none;
+}
+
+.speed-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #6496ff;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(100, 150, 255, 0.4);
+}
+
+.speed-value { color: #a0b8e0; font-size: 13px; min-width: 40px; }
+
+/* ==================== 完成提示 【不要修改】 ==================== */
+.done-badge {
+    display: none;
+    margin-top: 12px;
+    padding: 8px 24px;
+    background: rgba(30, 180, 80, 0.15);
+    border: 1px solid rgba(60, 220, 100, 0.3);
+    border-radius: 8px;
+    color: #4ade80;
+    font-size: 14px;
+    letter-spacing: 2px;
+}
+.done-badge.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="left-panel">
+        <h1 class="title">插入排序</h1>
+        <p class="desc">将未排序元素插入到已排序部分的正确位置</p>
+
+        <div class="num-wrapper" id="numBox">
+            <div class="divider" id="divider"><span class="divider-label">已排序 ↓</span></div>
+        </div>
+
+        <div class="comment-box" id="commentBox">🎮 点击「开始」按钮启动排序动画</div>
+
+        <div class="stats-row">
+            <div class="stat-item">
+                <div class="stat-value" id="loopCount">0</div>
+                <div class="stat-label">循环次数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="compCount">0</div>
+                <div class="stat-label">比较次数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="swapCount">0</div>
+                <div class="stat-label">移动次数</div>
+            </div>
+        </div>
+
+        <div class="controls-row">
+            <button class="ctrl-btn primary" id="btnStart" onclick="startSort()">▶ 开始</button>
+            <button class="ctrl-btn" id="btnPause" onclick="togglePause()">⏸ 暂停</button>
+            <button class="ctrl-btn" id="btnStep" onclick="stepOnce()">⏭ 单步</button>
+            <button class="ctrl-btn" id="btnReset" onclick="resetAll()">🔄 重置</button>
+        </div>
+
+        <div class="speed-control">
+            <span class="speed-label">动画速度</span>
+            <input type="range" class="speed-slider" id="speedSlider" min="1" max="10" value="5" oninput="updateSpeed()">
+            <span class="speed-value" id="speedValue">5</span>
+        </div>
+
+        <div class="done-badge" id="doneBadge">🎉 排序完成！</div>
+    </div>
+
+    <div class="right-panel">
+        <div class="code-header">
+            <div class="code-dot code-dot-red"></div>
+            <div class="code-dot code-dot-yellow"></div>
+            <div class="code-dot code-dot-green"></div>
+            <span class="code-filename">InsertionSort.java</span>
+        </div>
+        <div class="info-bar">
+            <div class="info-item">⏱ 时间: <span class="info-value">O(n²)</span></div>
+            <div class="info-item">💾 空间: <span class="info-value">O(1)</span></div>
+            <div class="info-item">📊 稳定性: <span class="info-value">稳定</span></div>
+        </div>
+        <div class="code-block" id="codeBlock"></div>
+    </div>
+</div>
+
+<script>
+// ==================== 【必填④】算法数据和 Java 代码 ====================
+
+const JAVA_CODE = [
+    'public static void insertionSort(int[] a) {',
+    '    int n = a.length;',
+    '    for (int i = 1; i < n; i++) {',
+    '        int key = a[i];',
+    '        int j = i - 1;',
+    '        while (j >= 0 && a[j] > key) {',
+    '            a[j + 1] = a[j];',
+    '            j--;',
+    '        }',
+    '        a[j + 1] = key;',
+    '    }',
+    '}',
+];
+
+const LINE_EXTRACT = 4;     // int key = a[i];
+const LINE_COMPARE = 6;     // while (j >= 0 && a[j] > key)
+const LINE_SHIFT   = 7;     // a[j + 1] = a[j];
+const LINE_INSERT  = 10;    // a[j + 1] = key;
+
+const INIT_ARR = [5, 3, 8, 4, 2];
+
+// ==================== 状态变量 【不要修改】 ====================
+let arr = [];
+let circleOrder = [];
+let comparisons = 0;
+let swaps = 0;
+let loops = 0;
+let isRunning = false;
+let isPaused = false;
+let generatorRef = null;
+let stepGen = null;
+
+// ==================== 工具函数 【不要修改】 ====================
+
+function getDelay() {
+    return 1350 - parseInt(document.getElementById('speedSlider').value) * 120;
+}
+
+function sleep(ms) {
+    return new Promise(r => { const t = setTimeout(r, ms); sleep._t = t; });
+}
+function abortSleep() { if (sleep._t) { clearTimeout(sleep._t); sleep._t = null; } }
+
+function getCircleAt(pos) {
+    return document.getElementById('circle-' + circleOrder[pos]);
+}
+function setCircleState(pos, state) {
+    const el = getCircleAt(pos);
+    if (el) el.className = 'circle ' + state;
+}
+function getEl(id) {
+    return document.getElementById('circle-' + id);
+}
+
+function getPos() {
+    const box = document.getElementById('numBox');
+    const w = box.clientWidth, cw = 90, n = arr.length;
+    const gap = n > 1 ? (w - cw * n) / (n - 1) : 0;
+    return { w, cw, gap };
+}
+function posLeft(pos) {
+    const { cw, gap } = getPos();
+    return pos * (cw + gap);
+}
+
+function updateStats() {
+    document.getElementById('loopCount').textContent = loops;
+    document.getElementById('compCount').textContent = comparisons;
+    document.getElementById('swapCount').textContent = swaps;
+}
+function setComment(text) {
+    document.getElementById('commentBox').textContent = text;
+}
+
+function updateDivider(sortedCount) {
+    const div = document.getElementById('divider');
+    if (sortedCount <= 0) { div.classList.remove('show'); return; }
+    if (sortedCount >= arr.length) { div.classList.remove('show'); return; }
+    const { cw, gap } = getPos();
+    div.style.left = (sortedCount * (cw + gap) - gap / 2) + 'px';
+    div.classList.add('show');
+}
+
+// ==================== 三段动画工具 【不要修改】 ====================
+
+// ① 上浮：元素从当前位置上移 80px
+function animLiftUp(el) {
+    return new Promise(resolve => {
+        el.className = el.className.replace(/\b(normal|sorted|active|moving)\b/g, '').trim() + ' active lift-up';
+        setTimeout(resolve, 300);
+    });
+}
+
+// ② 平移：上浮状态下水平移动到目标位置
+function animSlideTo(el, targetPos) {
+    return new Promise(resolve => {
+        el.style.left = posLeft(targetPos) + 'px';
+        setTimeout(resolve, 400);
+    });
+}
+
+// ③ 下落：元素从上浮状态落回
+function animDrop(el, finalState) {
+    return new Promise(resolve => {
+        el.className = 'circle ' + finalState + ' drop-down';
+        setTimeout(resolve, 300);
+    });
+}
+
+// 一键动画：上浮 → 平移 → 下落
+async function animLiftSlideDrop(el, targetPos, finalState) {
+    await animLiftUp(el);
+    await animSlideTo(el, targetPos);
+    await animDrop(el, finalState);
+}
+
+// ==================== 渲染函数 【不要修改】 ====================
+
+function initRender() {
+    arr = [...INIT_ARR];
+    renderCircles();
+    renderCode(0);
+    updateStats();
+}
+
+function renderCircles() {
+    const box = document.getElementById('numBox');
+    const divider = document.getElementById('divider');
+    box.innerHTML = '';
+    box.appendChild(divider);
+
+    const { cw, gap } = getPos();
+    circleOrder = [];
+    arr.forEach((val, idx) => {
+        const div = document.createElement('div');
+        div.className = 'circle normal';
+        div.id = 'circle-' + idx;
+        div.textContent = val;
+        div.style.left = (idx * (cw + gap)) + 'px';
+        box.appendChild(div);
+        circleOrder.push(idx);
+    });
+}
+
+function renderCode(highlightLine) {
+    const block = document.getElementById('codeBlock');
+    let html = '';
+    JAVA_CODE.forEach((line, i) => {
+        const lineNum = i + 1;
+        const cls = highlightLine === lineNum ? 'code-line highlight' : 'code-line';
+        let s = escapeHtml(line);
+        const ci = s.indexOf('//');
+        if (ci !== -1) {
+            s = highlightTokens(s.substring(0, ci)) + `<span class="syn-comment">${s.substring(ci)}</span>`;
+        } else {
+            s = highlightTokens(s);
+        }
+        html += `<span class="${cls}"><span class="line-num">${lineNum}</span>${s}</span>`;
+    });
+    block.innerHTML = html;
+}
+
+function highlightTokens(s) {
+    s = s.replace(/\b(void|int|for|if|while|return|class|public|private|static|new|true|false|null|else)\b/g, '<span class="syn-keyword">$1</span>');
+    s = s.replace(/\b(\d+)\b/g, '<span class="syn-number">$1</span>');
+    s = s.replace(/\b([a-zA-Z_]\w*)\s*(?=\()/g, '<span class="syn-func">$1</span>');
+    return s;
+}
+function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ==================== 插入排序生成器 ====================
+
+async function* sortGenerator() {
+    const n = arr.length;
+    comparisons = 0;
+    swaps = 0;
+    updateDivider(0);
+
+    // 第一个元素已排序
+    setCircleState(0, 'sorted');
+    updateDivider(1);
+
+    for (let i = 1; i < n; i++) {
+        loops = i;
+        updateStats();
+
+        const key = arr[i];
+        const keyId = circleOrder[i];
+        const keyEl = getEl(keyId);
+
+        // ① 提取 key — 上浮
+        renderCode(LINE_EXTRACT);
+        setComment(`取出 a[${i}]=${key}，上浮提取`);
+        await animLiftUp(keyEl);
+        await sleep(getDelay() * 0.5);
+        if (isPaused) yield 'paused';
+
+        let j = i - 1;
+        let insertPos = i;
+
+        // ② 从右往左比较，大于 key 的元素右移一位
+        while (j >= 0 && arr[j] > key) {
+            comparisons++;
+            const movingId = circleOrder[j];
+            const movingEl = getEl(movingId);
+
+            renderCode(LINE_COMPARE);
+            setComment(`比较 a[${j}]=${arr[j]} > key=${key}，右移`);
+            updateStats();
+
+            movingEl.className = 'circle moving';
+            await sleep(getDelay() * 0.6);
+            if (isPaused) yield 'paused';
+
+            // 右移动画
+            movingEl.style.left = posLeft(j + 1) + 'px';
+            circleOrder[j + 1] = movingId;
+            swaps++;
+            updateStats();
+
+            renderCode(LINE_SHIFT);
+            setComment(`a[${j}]=${arr[j]} → a[${j+1}]`);
+            await sleep(400);
+            if (isPaused) yield 'paused';
+
+            movingEl.className = 'circle sorted';
+            arr[j + 1] = arr[j];
+            insertPos = j;
+            j--;
+        }
+
+        // 边界比较计数
+        if (j >= 0) {
+            comparisons++;
+            renderCode(LINE_COMPARE);
+            setComment(`比较 a[${j}]=${arr[j]} ≤ key=${key}，找到位置`);
+            updateStats();
+            await sleep(getDelay() * 0.3);
+            if (isPaused) yield 'paused';
+        }
+
+        // ③ 平移 key 到插入位置
+        renderCode(LINE_INSERT);
+        setComment(`key=${key} 平移到位置 ${insertPos}`);
+        await animSlideTo(keyEl, insertPos);
+        if (isPaused) yield 'paused';
+
+        // ④ 下落插入
+        setComment(`key=${key} 插入到位置 ${insertPos}`);
+        await animDrop(keyEl, 'sorted');
+
+        arr[insertPos] = key;
+        circleOrder[insertPos] = keyId;
+
+        updateDivider(i + 1);
+        await sleep(getDelay() * 0.3);
+    }
+}
+
+// ==================== 控制逻辑 【不要修改】 ====================
+
+async function startSort() {
+    if (isRunning) return;
+    isRunning = true;
+    isPaused = false;
+    document.getElementById('btnStart').textContent = '▶ 运行中';
+    document.getElementById('btnPause').textContent = '⏸ 暂停';
+    document.getElementById('doneBadge').classList.remove('show');
+
+    arr = [...INIT_ARR];
+    comparisons = 0;
+    swaps = 0;
+    loops = 0;
+    renderCircles();
+    await sleep(50);
+
+    generatorRef = sortGenerator();
+    for await (const _ of generatorRef) {
+        while (isPaused) await sleep(100);
+    }
+
+    renderCode(0);
+    setComment('🎉 排序完成！所有元素已按升序排列');
+    document.getElementById('doneBadge').classList.add('show');
+    isRunning = false;
+    document.getElementById('btnStart').textContent = '▶ 开始';
+}
+
+function togglePause() {
+    if (!isRunning) return;
+    isPaused = !isPaused;
+    document.getElementById('btnPause').textContent = isPaused ? '▶ 继续' : '⏸ 暂停';
+    setComment(isPaused ? '⏸ 已暂停' : '▶ 继续排序...');
+}
+
+async function stepOnce() {
+    if (isRunning) return;
+    if (!stepGen) {
+        comparisons = 0; swaps = 0; loops = 0; updateStats();
+        arr = [...INIT_ARR]; renderCircles(); await sleep(50);
+        stepGen = sortGenerator();
+    }
+    const result = await stepGen.next();
+    if (result.done) {
+        stepGen = null;
+        renderCode(0);
+        setComment('🎉 排序完成！');
+        document.getElementById('doneBadge').classList.add('show');
+    }
+}
+
+function resetAll() {
+    isRunning = false; isPaused = false;
+    abortSleep(); generatorRef = null; stepGen = null;
+    arr = [...INIT_ARR]; comparisons = 0; swaps = 0; loops = 0;
+    document.getElementById('btnStart').textContent = '▶ 开始';
+    document.getElementById('btnPause').textContent = '⏸ 暂停';
+    document.getElementById('doneBadge').classList.remove('show');
+    document.getElementById('divider').classList.remove('show');
+    setComment('🎮 点击「开始」按钮启动排序动画');
+    initRender();
+}
+
+function updateSpeed() {
+    document.getElementById('speedValue').textContent = document.getElementById('speedSlider').value;
+}
+
+window.addEventListener('resize', () => { if (!isRunning) renderCircles(); });
+window.addEventListener('DOMContentLoaded', initRender);
+</script>
+</body>
+</html>
