@@ -710,8 +710,7 @@ async function* partition(lo, hi) {
                 swaps++;
                 updateStats();
 
-                // animSwap 参数：球A→位置j，球B→位置i（目标位置交叉）
-                await animSwap(circleOrder[i], circleOrder[j], j, i);
+                await animSwap(circleOrder[i], circleOrder[j], i, j);
                 [arr[i], arr[j]] = [arr[j], arr[i]];
             } else {
                 setCircleState(j, 'normal');
@@ -730,8 +729,7 @@ async function* partition(lo, hi) {
         updateStats();
 
         // 保持 pivot 紫色参与交换
-        // animSwap 参数：球A→位置hi，球B→位置i（目标位置交叉）
-        await animSwap(circleOrder[i], circleOrder[hi], hi, i);
+        await animSwap(circleOrder[i], circleOrder[hi], i, hi);
         [arr[i], arr[hi]] = [arr[hi], arr[i]];
         updatePivotLabel(i);
     }
