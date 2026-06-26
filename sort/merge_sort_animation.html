@@ -692,6 +692,10 @@ function posLeft(pos) {
     const { cw, gap } = getPos();
     return pos * (cw + gap);
 }
+function posLeftTmp(pos) {
+    const { cw, gap } = getPos();
+    return pos * (cw + gap);
+}
 
 function getCircleAt(pos) {
     return document.getElementById('circle-' + circleOrder[pos]);
@@ -726,18 +730,27 @@ function updateDivider(sortedCount) {
 
 function showPointer(name, pos) {
     removePointer(name);
-    const box = document.getElementById('arrBox');
+    // i/j 显示在主数组上方，k 显示在临时数组上方
+    const isMain = (name !== 'k');
+    const box = isMain ? document.getElementById('arrBox') : document.getElementById('tempBox');
+    const left = isMain ? posLeft(pos) : posLeftTmp(pos);
+    const top = isMain ? -28 : -24;
+
     const ptr = document.createElement('div');
     ptr.className = 'pointer ptr-' + name;
     ptr.id = 'ptr-' + name;
     ptr.textContent = name;
-    ptr.style.left = (posLeft(pos) + 45) + 'px';
+    ptr.style.left = (left + 45) + 'px';
+    ptr.style.top = top + 'px';
     box.appendChild(ptr);
 }
 
 function updatePointer(name, pos) {
     const ptr = document.getElementById('ptr-' + name);
-    if (ptr) ptr.style.left = (posLeft(pos) + 45) + 'px';
+    if (!ptr) return;
+    const isMain = (name !== 'k');
+    const left = isMain ? posLeft(pos) : posLeftTmp(pos);
+    ptr.style.left = (left + 45) + 'px';
 }
 
 function removePointer(name) {
@@ -1052,6 +1065,8 @@ async function* mergeGen(l, m, r) {
         if (isPaused) yield;
         setCircleState(i, 'left-part');
         i++; k++;
+        updatePointer('i', i);
+        updatePointer('k', k);
     }
 
     // 右半剩余
@@ -1067,6 +1082,8 @@ async function* mergeGen(l, m, r) {
         if (isPaused) yield;
         setCircleState(j, 'right-part');
         j++; k++;
+        updatePointer('j', j);
+        updatePointer('k', k);
     }
 
     // 回填：tmp → 原数组
